@@ -13,7 +13,6 @@
                 Drop file here or <em>click to upload</em>
             </div>
         </el-upload>
-        {{ fileList }}
     </div>
 </template>
 

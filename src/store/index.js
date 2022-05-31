@@ -4,7 +4,8 @@ export default createStore({
     state: {
         sheets: {
             foundation: { id: 'foundation', name: 'Foundation', papers: [] }
-        }
+        },
+        tags: new Set()
     },
     getters: {
     },
@@ -16,6 +17,10 @@ export default createStore({
                 paper['notes'] = '';
                 state.sheets[payload.sheet].papers.push(paper)
             }
+        },
+
+        addTag (state, tag) {
+            state.tags.add(tag);
         }
     },
     actions: {

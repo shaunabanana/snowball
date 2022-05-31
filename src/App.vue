@@ -1,5 +1,5 @@
 <template>
-    <el-tabs editable v-model="activeSheet" type="card">
+    <el-tabs v-model="activeSheet" type="card">
         <el-tab-pane
             class="tab-pane"
             v-for="sheet in $store.state.sheets"
@@ -45,6 +45,9 @@ export default {
             });
         },
     },
+
+    computed: {
+    }
 };
 </script>
 

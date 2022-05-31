@@ -2,6 +2,16 @@
 // import bibtexParse from '@orcid/bibtex-parse-js';
 import Cite from 'citation-js';
 
+export function formatAuthors (authors) {
+    if (authors.length >= 3) {
+        return `${authors[0].family} et al.`;
+    } else if (authors.length === 2) {
+        return `${authors[0].family} and ${authors[1].family}`;
+    } else if (authors.length === 1) {
+        return `${authors[0].family}`;
+    }
+}
+
 function processBibTex(fileContent) {
     const preprocessed = fileContent.replace(/([^\\])\$/g, '$1\\$');
     const bib = Cite(preprocessed);
@@ -10,7 +20,7 @@ function processBibTex(fileContent) {
             id: record.id,
             type: record.type,
             title: record.title,
-            authors: record.author ? record.author.map(author => `${author.given} ${author.family}`) : record.author,
+            authors: record.author ? record.author : [],
             abstract: record.abstract,
             year: record.issued['date-parts'][0][0],
             keywords: record.keyword ? record.keyword.split(',').map(s => s.trim()) : [],
