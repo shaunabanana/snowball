@@ -10,7 +10,8 @@
         >
             <el-icon class="el-icon--upload"><upload-filled /></el-icon>
             <div class="el-upload__text">
-                Drop file here or <em>click to upload</em>
+                Start by uploading a BibTeX file of your initial papers. <br/>
+                <em>Drop here or click to upload</em>
             </div>
         </el-upload>
     </div>
@@ -38,6 +39,8 @@ export default {
             handler() {
                 if (this.fileList.length === 0) return;
                 const file = this.fileList.pop();
+
+                this.$store.commit('setLoading', true);
                 processFile(file.raw).then((processed) => {
                     this.$emit("import", processed);
                 });

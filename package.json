@@ -5,18 +5,25 @@
   "scripts": {
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint"
+    "lint": "vue-cli-service lint",
+    "tauri:build": "vue-cli-service tauri:build --target universal-apple-darwin",
+    "tauri:serve": "vue-cli-service tauri:serve"
   },
   "dependencies": {
     "@citation-js/plugin-bibtex": "^0.5.7",
     "@element-plus/icons-vue": "^2.0.1",
     "@orcid/bibtex-parse-js": "^0.0.25",
     "@spaceavocado/librarian": "^0.4.5",
+    "@tauri-apps/api": "^1.0.0-rc.6",
     "citation-js": "^0.5.7",
     "core-js": "^3.8.3",
     "element-plus": "^2.2.2",
+    "sanitize-basename": "^2.0.0",
+    "tauri-plugin-fs-extra-api": "github:tauri-apps/tauri-plugin-fs-extra",
+    "tauri-plugin-store-api": "github:tauri-apps/tauri-plugin-store",
     "vue": "^3.2.13",
-    "vuex": "^4.0.0"
+    "vuex": "^4.0.0",
+    "yaml": "^2.1.1"
   },
   "devDependencies": {
     "@babel/core": "^7.12.16",
@@ -27,7 +34,10 @@
     "@vue/cli-service": "~5.0.0",
     "eslint": "^7.32.0",
     "eslint-plugin-vue": "^8.0.3",
+    "mark.js": "^8.11.1",
     "sass": "^1.32.7",
-    "sass-loader": "^12.0.0"
+    "sass-loader": "^12.0.0",
+    "vue-cli-plugin-tauri": "~1.0.0-rc.3",
+    "worker-loader": "^3.0.8"
   }
 }

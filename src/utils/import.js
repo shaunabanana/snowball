@@ -16,13 +16,15 @@ function processBibTex(fileContent) {
     const preprocessed = fileContent.replace(/([^\\])\$/g, '$1\\$');
     const bib = Cite(preprocessed);
     return bib.data.map(record => {
+
+    // console.log(record.issued);
         return {
             id: record.id,
             type: record.type,
             title: record.title,
             authors: record.author ? record.author : [],
             abstract: record.abstract,
-            year: record.issued['date-parts'][0][0],
+            year: record.issued ? record.issued['date-parts'][0][0]: 'Unknown',
             keywords: record.keyword ? record.keyword.split(',').map(s => s.trim()) : [],
         }
     });

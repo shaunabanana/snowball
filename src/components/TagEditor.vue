@@ -1,6 +1,6 @@
 <template>
     <el-tag
-        v-for="tag in modelValue" :key="tag"
+        v-for="tag in tags" :key="tag"
         style="margin-right: 0.2rem"
         closable
         @close="handleClose(tag)"
@@ -39,12 +39,11 @@ export default {
     name: "TagEditor",
 
     props: {
-        modelValue: {
+        tags: {
             type: Array,
         },
-        prompts: {
-            type: Array,
-            default: () => [],
+        paperId: {
+            type: String
         },
     },
 
@@ -64,17 +63,29 @@ export default {
         },
 
         handleClose(tag) {
-            const newValue = [...this.modelValue];
-            newValue.splice(newValue.indexOf(tag), 1);
-            this.$emit("update:modelValue", newValue);
+            const newTags = [...this.tags];
+            newTags.splice(newTags.indexOf(tag), 1);
+            this.$store.commit("updatePaper", {
+                paper: this.paperId,
+                updates: {
+                    tags: newTags
+                }
+            });
+            // this.$emit("update:modelValue", newValue);
         },
 
         addTag(tag) {
             if (tag.length > 0) {
-                const newValue = [...this.modelValue];
-                newValue.push(tag);
+                const newTags = [...this.tags];
+                newTags.push(tag);
                 this.$store.commit("addTag", tag);
-                this.$emit("update:modelValue", newValue);
+                this.$store.commit('updatePaper', {
+                    paper: this.paperId,
+                    updates: {
+                        tags: newTags
+                    }
+                })
+                // this.$emit("update:modelValue", newValue);
             }
             this.inputVisible = false;
             this.inputValue = "";
