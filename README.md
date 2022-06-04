@@ -11,7 +11,7 @@
     <br />
     <br />
     <b>Download for </b>
-    macOS
+    <a href="https://github.com/shaunabanana/snowball/releases/download/v0.1.0/Snowball_0.1.0_universal.dmg">macOS</a>
     ·
     Windows
     ·
