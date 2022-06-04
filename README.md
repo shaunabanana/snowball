@@ -9,8 +9,6 @@
   <p align="center">
   Find and filter literature, fast.
     <br />
-    <a href="https://shaunabanana.github.io/snowball"><strong>online demo »</strong></a>
-    <br />
     <br />
     <b>Download for </b>
     macOS
@@ -22,7 +20,7 @@
     <i>~ Links will be added once a release is available. ~</i>
   </p>
 </p>
-Snowball lets you quickly find and filter through papers using the snowballing method.
+Snowball lets you quickly find and filter through papers using the snowballing method. Start with a core collection of papers, and find more by going through their citations and references.
 <br/>
 <br/>
 
