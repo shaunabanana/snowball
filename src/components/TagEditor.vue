@@ -2,10 +2,11 @@
     <el-tag
         v-for="tag in tags" :key="tag"
         style="margin-right: 0.2rem"
-        closable
+        :closable="tag.type === ''"
+        :type="tag.type"
         @close="handleClose(tag)"
     >
-        {{ tag }}
+        {{ tag.text }}
     </el-tag>
     <el-autocomplete
         ref="input"
@@ -77,7 +78,7 @@ export default {
         addTag(tag) {
             if (tag.length > 0) {
                 const newTags = [...this.tags];
-                newTags.push(tag);
+                newTags.push({ type: '', text: tag });
                 this.$store.commit("addTag", tag);
                 this.$store.commit('updatePaper', {
                     paper: this.paperId,

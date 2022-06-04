@@ -63,6 +63,7 @@ export default {
 
         openProject() {
             open({ filters: [{ name: '', extensions: ["snowball"] }] }).then(openPath => {
+                if (!openPath) return;
                 this.$store.commit('setProjectPath', openPath);
                 this.$emit("update:modelValue", openPath);
                 this.$store.commit('setLoading', true);

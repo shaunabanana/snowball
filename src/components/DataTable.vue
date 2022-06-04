@@ -3,7 +3,9 @@
         <el-row>
             <el-col :span="12">
                 <!-- <el-button>« Snowball Backward</el-button> -->
-                <el-button disabled>Snowball from included papers »</el-button>
+                <el-button @click="$emit('snowball')"
+                    >Snowball from included papers »</el-button
+                >
             </el-col>
             <el-col :span="12">
                 <el-input
@@ -11,12 +13,17 @@
                     placeholder="Filter papers..."
                     clearable
                     spellcheck="false"
-                    style="padding-right: 1rem;"
+                    style="padding-right: 1rem"
                     @clear="filterPapers(false)"
                     @keyup.enter="filterPapers(false)"
                 >
+                    <template #suffix>
+                        {{ this.filter.length > 0 && filteredData.length !== data.length ? `${filteredData.length} filtered` : '' }}
+                    </template>
                     <template #append>
-                        <el-button @click="filterPapers(false)">Filter</el-button>
+                        <el-button @click="filterPapers(false)"
+                            >Filter</el-button
+                        >
                     </template>
                 </el-input>
             </el-col>
@@ -47,12 +54,15 @@
                         @click="currentPaper = null"
                     />
                 </el-row>
-                <el-row style="overflow-y: auto" :style="{height: `${tableHeight}px`}">
+                <el-row
+                    style="overflow-y: auto"
+                    :style="{ height: `${tableHeight}px` }"
+                >
                     <el-descriptions
                         :title="currentPaper.title"
                         :column="1"
                         direction="vertical"
-                        style="padding: 1rem; padding-bottom: 20rem;"
+                        style="padding: 1rem; padding-bottom: 20rem"
                     >
                         <el-descriptions-item>
                             <tag-editor
@@ -73,7 +83,23 @@
                         </el-descriptions-item>
 
                         <el-descriptions-item label="Abstract">
-                            {{ currentPaper.abstract }}
+                            <span v-if="!editing" 
+                                @click="editing = true; $nextTick(() => $refs.abstract.focus())">
+                                {{ currentPaper.abstract ? currentPaper.abstract : 'Abstract missing.' }}
+                            </span>
+                            <el-input v-else ref="abstract"
+                                type="textarea"
+                                v-model="currentPaper.abstract"
+                                :autosize="{ minRows: 4 }"
+                                placeholder="Abstract missing."
+                                @change="
+                                    $store.commit('updatePaper', {
+                                        paper: currentPaper.id,
+                                        updates: { abstract: $event },
+                                    })
+                                "
+                                @blur="editing = false"
+                            />
                         </el-descriptions-item>
 
                         <el-descriptions-item label="Year">
@@ -86,10 +112,12 @@
                                 v-model="currentPaper.notes"
                                 :autosize="{ minRows: 4 }"
                                 placeholder="Type out any notes here."
-                                @change="$store.commit('updatePaper', {
-                                    paper: currentPaper.id,
-                                    updates: {notes: $event}
-                                })"
+                                @change="
+                                    $store.commit('updatePaper', {
+                                        paper: currentPaper.id,
+                                        updates: { notes: $event },
+                                    })
+                                "
                             />
                         </el-descriptions-item>
                     </el-descriptions>
@@ -102,6 +130,7 @@
 <script lang="jsx">
 import { formatAuthors } from '@/utils/import'
 import { filter } from '@/utils/search';
+import { processTags } from '@/utils/tags';
 
 import TagEditor from '@/components/TagEditor.vue'
 
@@ -132,6 +161,7 @@ export default {
             tableWidth: 0,
             tableHeight: 0,
             defaultWidths: [],
+            editing: false,
             columns: [
                 {
                     key: "include",
@@ -185,15 +215,17 @@ export default {
                     title: "Tags",
                     width: 200,
                     hidden: false,
-                    cellRenderer: ({ cellData: tags }) =>
-                        tags.map(tag => (
+                    cellRenderer: ({rowData}) => {
+                        return processTags(rowData).map(tag => (
                             <el-tag style="margin-right: 0.2rem; cursor: pointer;"
+                                type={tag.type}
                                 onClick={() => {
-                                    this.filter = `"${tag}"`;
+                                    this.filter = `"${tag.text}"`;
                                     this.filterPapers(true);
                                 }}
-                            >{tag}</el-tag>
-                        )),
+                            >{tag.text}</el-tag>
+                        ))
+                    }
                 },
             ],
         };
@@ -220,19 +252,25 @@ export default {
             this.filteredData = filter(
                 this.data, 
                 this.filter, 
-                tag ? ['tags'] : ['title', 'abstract', 'keywords', 'tags']
+                tag ? ['tags'] : ['title', 'abstract', 'keywords', 'tags'],
+                { tags: (tags, paper) => processTags(paper).map(tag => tag.text).join(' ') }
             );
         },
 
         onRowClick(event) {
             this.currentPaper = event.rowData;
+            this.editing = false;
         },
 
         rowClass(row) {
+            let classes = [];
             if (this.currentPaper && row.rowData.id === this.currentPaper.id) {
-                return 'selected'
+                classes.push('selected');
             }
-            return '';
+            // if (!row.rowData.doi) {
+            //     classes.push('no-doi');
+            // }
+            return classes.join(' ');
         },
 
         onResize (event) {
@@ -262,6 +300,12 @@ export default {
                 }
             }
         }
+    },
+
+    watch: {
+        data () {
+            this.filterPapers(false);
+        }
     }
 };
 </script>
@@ -273,6 +317,10 @@ export default {
 
 .selected {
     background: var(--el-color-primary-light-8);
+}
+
+.no-doi {
+    background: var(--el-color-danger-light-8);
 }
 
 .data-table {

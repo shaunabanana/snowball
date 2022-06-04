@@ -17,9 +17,10 @@ function processBibTex(fileContent) {
     const bib = Cite(preprocessed);
     return bib.data.map(record => {
 
-    // console.log(record.issued);
+    // console.log(record.DOI);
         return {
-            id: record.id,
+            id: record.DOI ? record.DOI : record.id, 
+            doi: record.DOI, 
             type: record.type,
             title: record.title,
             authors: record.author ? record.author : [],
@@ -42,10 +43,10 @@ export function processFile(file) {
             })
             reader.readAsText(file);
         })
-    }
-    // if (file.name.endsWith(".xls") || file.name.endsWith(".xlsx")) {
+    } 
+    // else if (file.name.endsWith(".xls") || file.name.endsWith(".xlsx")) {
     //     readXlsxFile(files[0]).then((rows) => {
     //         console.log(rows[0]);
     //     });
-    // } else 
+    // }
 }

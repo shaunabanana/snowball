@@ -27,9 +27,9 @@ export default createStore({
     state: {
         projectPath: '',
         sheets: {
-            foundation: {
-                id: 'foundation', 
-                name: 'Foundation', 
+            core: {
+                id: 'core', 
+                name: 'Core', 
                 papers: []
             }
         },
@@ -55,13 +55,29 @@ export default createStore({
         },
 
         addPapers (state, payload) {
+            payload.papers.sort((a, b) => {
+                if (typeof a.year === 'number' && typeof b.year === 'number') {
+                    return b.year - a.year;
+                } else if (typeof a.year === 'string' && typeof b.year === 'number') {
+                    return 1;
+                } else if (typeof a.year === 'number' && typeof b.year === 'string') {
+                    return -1;
+                } else {
+                    return 0;
+                }
+            })
             for (const paper of payload.papers) {
                 paper['tags'] = [];
+                // if (!paper.doi) paper['tags'].push({ type: 'danger', text: 'No DOI'});
+                // if (!paper.abstract) paper['tags'].push({ type: 'warning', text: 'No Abstract'});
+
                 paper['include'] = false;
                 paper['notes'] = '';
                 paper['sheets'] = [];
+
                 if (state.papers[paper.id]) {
-                    if (state.sheets[payload.sheet].papers.includes(paper.id)) {
+                    console.log("Existing paper", paper);
+                    if (!state.sheets[payload.sheet].papers.includes(paper.id)) {
                         state.sheets[payload.sheet].papers.push(paper.id);
                     }
                     if (!state.papers[paper.id].sheets.includes(payload.sheet)) {
@@ -88,6 +104,10 @@ export default createStore({
 
         addTag (state, tag) {
             if (!state.tags.includes(tag)) state.tags.push(tag);
+        },
+
+        addSheet (state, sheet) {
+            state.sheets[sheet.id] = sheet;
         }
     },
     actions: {

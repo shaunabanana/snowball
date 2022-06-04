@@ -1,7 +1,7 @@
-import { parse } from '@spaceavocado/librarian'
+import { parse } from '@spaceavocado/librarian';
 
 
-export function filter(papers, query, fields) {
+export function filter(papers, query, fields, formatters) {
     if (!fields) fields = ['title', 'abstract', 'keywords', 'tags'];
     console.log(fields);
     const search = parse(query).execute;
@@ -11,7 +11,14 @@ export function filter(papers, query, fields) {
         for (let field of fields) {
             if (!paper[field]) continue;
 
-            let searchData = Array.isArray(paper[field]) ? paper[field].join(' ') : paper[field];
+            let searchData = paper[field];
+            if (Array.isArray(paper[field])) {
+                if (formatters[field]) {
+                    searchData = formatters[field](paper[field], paper)
+                } else {
+                    searchData = paper[field].join(' ');
+                }
+            }
             // console.log(searchData);
             const match = search(searchData);
             if (match) {
