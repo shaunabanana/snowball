@@ -26,6 +26,16 @@ Snowball lets you quickly find and filter through papers using the snowballing m
 <br/>
 <br/>
 
+## How to use
+1. Start with a collection of papers. You can use a search engine like Web of Science or a reference manager like Zotero.
+2. Export your "core" collection into a BibTeX file. Import it into Snowball.
+3. Review the papers according to you inclusion criteria. Assign tags and write notes as necessary.
+4. Once you've decided on a paper, tick/untick the switch for inclusion/exclusion.
+5. After going through the list, click "Snowball from included papers" to find all citations and references of the included papers.
+6. Go to step 3, rinse and repeat.
+
+![screenshot](./assets/screenshot.png)
+
 ## I found a bug!
 Please file an issue [here](https://github.com/shaunabanana/snowball/issues), or email me at shengchenzhang1207@gmail.com.
 
