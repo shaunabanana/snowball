@@ -22,8 +22,8 @@
 </template>
 
 <script>
-import { appWindow } from '@tauri-apps/api/window'
-import { getTauriVersion } from "@tauri-apps/api/app";
+import { appWindow } from '@tauri-apps/api/window';
+import { trace, info, attachConsole } from 'tauri-plugin-log-api';
 
 import FileImport from "@/components/FileImport.vue";
 import DataTable from "@/components/DataTable.vue";
@@ -49,61 +49,72 @@ export default {
             filter: "",
             perPage: 100,
             currentPage: 1,
+            detach: null
         };
     },
 
     methods: {
         addImportedPapers(papers) {
-            console.log(papers);
+            trace(`Adding ${papers.length} new papers to sheet '${this.activeSheet}'.`);
             this.$store.commit("addPapers", {
                 sheet: this.activeSheet,
                 papers: papers,
             });
+            trace(`Removing loading screen.`);
             this.$store.commit('setLoading', false);
         },
 
-        includedPapers(sheet, forceDOI) {
+        includedPapers(sheet, forceDOI, forceNew) {
             const includedPapers = [];
             sheet.papers.forEach(paperId => {
                 if (this.$store.state.papers[paperId] && this.$store.state.papers[paperId].include) {
                     if (forceDOI && this.$store.state.papers[paperId].doi) {
+                        if (forceNew && this.$store.state.papers[paperId].sheets.length > 1) return;
                         includedPapers.push(this.$store.state.papers[paperId].doi);
                     } else if (!forceDOI) {
+                        if (forceNew && this.$store.state.papers[paperId].sheets.length > 1) return;
                         includedPapers.push(this.$store.state.papers[paperId].id);
                     }
                 }
             });
-            console.log(sheet.name, includedPapers);
+            trace(`Sheet '${sheet.name}' has ${includedPapers.length} included papers.`);
             return includedPapers;
         },
 
         snowball (sheet) {
+            trace(`Showing loading screen.`);
             this.$store.commit('setLoading', true);
-            const includedPapers = this.includedPapers(sheet, true);
+            const includedPapers = this.includedPapers(sheet, true, true);
 
             const newPapers = [];
             Promise.all(includedPapers.map(doi => querySemanticScholar(doi))).then(results => {
-                console.log("Snowballing result", results);
                 results.forEach(result => {
                     result.citations.forEach(paper => newPapers.push(paper));
                     result.references.forEach(paper => newPapers.push(paper));
                 });
-
                 const sheetId = `layer-${Object.keys(this.$store.state.sheets).length}`;
                 const sheetName = `Layer ${Object.keys(this.$store.state.sheets).length}`;
+                trace(`Adding new sheet (${sheetId}) named '${sheetName}'.`);
                 this.$store.commit('addSheet', {id: sheetId, name: sheetName, papers: []});
+                trace(`Setting active sheet to '${sheetId}'.`);
                 this.activeSheet = sheetId;
                 this.addImportedPapers(newPapers);
-                // console.log('Snowballing result', newPapers);
+
+                info(`Snowballing finished for ${newPapers.length} papers.`);
             });
             
         }
     },
 
     mounted() {
-        getTauriVersion().then((info) => {
-            console.log(info);
-        });
+        attachConsole().then(detach => {
+            this.detach = detach;
+            trace('Logger attached to WebView.');
+        })
+    },
+
+    beforeUnmount () {
+        this.detach();
     },
 
     computed: {

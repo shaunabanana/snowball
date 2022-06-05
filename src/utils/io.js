@@ -107,6 +107,8 @@ export function readProject(path) {
                     // Finally resolve the promise
                     resolve(projectData)
                 })
+            }).catch(errors => {
+                console.log('Error when reading sheets', errors)
             })
         });
     })

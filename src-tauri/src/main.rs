@@ -9,35 +9,47 @@ use std::path::Path;
 use tauri::{Menu, MenuItem, Submenu};
 use tauri_plugin_store::PluginBuilder;
 use tauri_plugin_fs_extra::FsExtra;
+use tauri_plugin_log::{LogTarget, LoggerBuilder};
 
 #[tauri::command]
-fn init_dir(path: String) {
+fn init_dir(path: String) -> Result<(), String> {
     // println!("Creating directory: {}", path);
     if Path::new(&path).exists() {
-        fs::remove_dir_all(&path);
+        // fs::remove_dir_all(&path);
+        // return Ok(format!("Failed to remove directory '{}'", path).into()) Err(format!("Successfully removed directory '{}'", path).into())
+        match fs::remove_dir_all(&path) {
+            Err(_) => return Err(format!("Failed to remove directory '{}'", path).into()),
+            Ok(_) => ()
+        }
     }
-    fs::create_dir(path);
+    match fs::create_dir(&path) {
+        Err(_) => Err(format!("Failed to create directory '{}'", path).into()),
+        Ok(_) => Ok(())
+    }
 }
 
 #[tauri::command]
-fn write_file(path: String, contents: String) {
+fn write_file(path: String, contents: String) -> Result<(), String> {
     // println!("Writing file: {}", path);
     // println!("File contents: {}", contents);
-    fs::write(path, contents);
+    match fs::write(&path, contents) {
+        Err(_) => Err(format!("Failed to create directory '{}'", path).into()),
+        Ok(_) => Ok(())
+    }
 }
 
 #[tauri::command]
-fn read_file(path: String) -> String {
+fn read_file(path: String) -> Result<String, String> {
     // println!("Reading file: {}", path);
-    let result = fs::read_to_string(path);
+    let result = fs::read_to_string(&path);
     match result {
-        Err(_) => "This failed!".into(),
-        Ok(contents) => contents.into()
+        Err(_) => Err(format!("Failed to read file '{}'", path).into()),
+        Ok(contents) => Ok(contents.into())
     }
 }
 
 fn main() {
-    let appmenu = Submenu::new("App", Menu::new()
+    let appmenu = Submenu::new("Snowball", Menu::new()
     // .add_native_item(MenuItem::About("Snowball".to_string(), tauri::AboutMetadata {
     //     version: Some("0.1.0".to_string()),
     //     authors: Some(["Shengchen Zhang".to_string()].to_vec()),
@@ -81,6 +93,11 @@ let menu = Menu::new()
 tauri::Builder::default()
 .plugin(PluginBuilder::default().build())
 .plugin(FsExtra::default())
+.plugin(LoggerBuilder::new().targets([
+    LogTarget::LogDir,
+    LogTarget::Stdout,
+    LogTarget::Webview,
+]).build())
 .menu(menu)
 .on_menu_event(|event| {
     match event.menu_item_id() {

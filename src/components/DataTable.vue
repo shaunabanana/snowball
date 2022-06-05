@@ -1,13 +1,23 @@
 <template>
     <div class="data-table">
         <el-row>
-            <el-col :span="12">
+            <el-col :span="16">
                 <!-- <el-button>« Snowball Backward</el-button> -->
-                <el-button @click="$emit('snowball')"
-                    >Snowball from included papers »</el-button
-                >
+                <el-button @click="$emit('add-paper')" icon="Plus">
+                    Add paper by DOI
+                </el-button>
+
+                <el-button @click="$emit('add-paper')" icon="Download">
+                    Export all included papers
+                </el-button>
+
+                <el-button @click="$emit('snowball')" plain type="primary">
+                    Snowball from included papers »
+                </el-button>
+
+                
             </el-col>
-            <el-col :span="12">
+            <el-col :span="8">
                 <el-input
                     v-model="filter"
                     placeholder="Filter papers..."
@@ -267,9 +277,9 @@ export default {
             if (this.currentPaper && row.rowData.id === this.currentPaper.id) {
                 classes.push('selected');
             }
-            // if (!row.rowData.doi) {
-            //     classes.push('no-doi');
-            // }
+            if (row.rowData.sheets.length > 1) {
+                classes.push('existing');
+            }
             return classes.join(' ');
         },
 
@@ -317,6 +327,10 @@ export default {
 
 .selected {
     background: var(--el-color-primary-light-8);
+}
+
+.existing {
+    color: var(--el-color-info);
 }
 
 .no-doi {

@@ -27,6 +27,9 @@ git = "https://github.com/tauri-apps/tauri-plugin-store"
 git = "https://github.com/tauri-apps/tauri-plugin-fs-extra"
 #branch = "main"
 
+[dependencies.tauri-plugin-log]
+git = "https://github.com/tauri-apps/tauri-plugin-log"
+
 [features]
 # by default Tauri runs in production mode
 # when `tauri dev` runs it is executed with `cargo run --no-default-features` if `devPath` is an URL

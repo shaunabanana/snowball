@@ -9,7 +9,7 @@ export function filter(papers, query, fields, formatters) {
 
     for (const paper of papers) {
         for (let field of fields) {
-            if (!paper[field]) continue;
+            if (!paper || !paper[field]) continue;
 
             let searchData = paper[field];
             if (Array.isArray(paper[field])) {
