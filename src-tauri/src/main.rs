@@ -65,20 +65,18 @@ fn main() {
     //     .add_native_item(MenuItem::CloseWindow)
     // );
     
-    // let editmenu = Submenu::new("Edit", Menu::new()
-    //     .add_native_item(MenuItem::Undo)
-    //     .add_native_item(MenuItem::Redo)
-    //     .add_native_item(MenuItem::Cut)
-    //     .add_native_item(MenuItem::Copy)
-    //     .add_native_item(MenuItem::Paste)
-    // );
+    let editmenu = Submenu::new("Edit", Menu::new()
+        .add_native_item(MenuItem::Undo)
+        .add_native_item(MenuItem::Redo)
+        .add_native_item(MenuItem::Cut)
+        .add_native_item(MenuItem::Copy)
+        .add_native_item(MenuItem::Paste)
+    );
 
 let menu = Menu::new()
-.add_submenu(appmenu);
+.add_submenu(appmenu)
 // .add_submenu(filemenu)
-// .add_submenu(editmenu);
-// .add_native_item(MenuItem::Copy)
-// .add_item(CustomMenuItem::new("hide", "Hide"))
+.add_submenu(editmenu);
 
 tauri::Builder::default()
 .plugin(PluginBuilder::default().build())
