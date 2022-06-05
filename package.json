@@ -6,7 +6,7 @@
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint",
-    "tauri:build": "vue-cli-service tauri:build --target universal-apple-darwin",
+    "tauri:build": "vue-cli-service tauri:build",
     "tauri:serve": "vue-cli-service tauri:serve"
   },
   "dependencies": {
@@ -19,6 +19,7 @@
     "citation-js": "^0.5.7",
     "core-js": "^3.8.3",
     "element-plus": "^2.2.2",
+    "querystring-es3": "^0.2.1",
     "sanitize-basename": "^2.0.0",
     "tauri-plugin-fs-extra-api": "github:tauri-apps/tauri-plugin-fs-extra",
     "tauri-plugin-store-api": "github:tauri-apps/tauri-plugin-store",
