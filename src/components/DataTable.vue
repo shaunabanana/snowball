@@ -1,23 +1,21 @@
 <template>
     <div class="data-table">
         <el-row>
-            <el-col :span="16">
+            <el-col :span="12">
                 <!-- <el-button>« Snowball Backward</el-button> -->
-                <el-button @click="$emit('add-paper')" icon="Plus">
+                <!-- <el-button @click="$emit('add-paper')" icon="Plus">
                     Add paper by DOI
-                </el-button>
+                </el-button> -->
 
-                <el-button @click="$emit('add-paper')" icon="Download">
+                <!-- <el-button @click="$emit('add-paper')" icon="Download">
                     Export all included papers
-                </el-button>
+                </el-button> -->
 
                 <el-button @click="$emit('snowball')" plain type="primary">
                     Snowball from included papers »
                 </el-button>
-
-                
             </el-col>
-            <el-col :span="8">
+            <el-col :span="12">
                 <el-input
                     v-model="filter"
                     placeholder="Filter papers..."
@@ -27,8 +25,23 @@
                     @clear="filterPapers(false)"
                     @keyup.enter="filterPapers(false)"
                 >
+                    <template #prepend>
+                        <el-select
+                            v-model="filterMethod"
+                            placeholder="Select"
+                            style="width: 115px"
+                        >
+                            <el-option label="Boolean" value="boolean" />
+                            <el-option label="RegEx" value="regex" />
+                        </el-select>
+                    </template>
                     <template #suffix>
-                        {{ this.filter.length > 0 && filteredData.length !== data.length ? `${filteredData.length} filtered` : '' }}
+                        {{
+                            this.filter.length > 0 &&
+                            filteredData.length !== data.length
+                                ? `${filteredData.length} filtered`
+                                : ""
+                        }}
                     </template>
                     <template #append>
                         <el-button @click="filterPapers(false)"
@@ -93,11 +106,22 @@
                         </el-descriptions-item>
 
                         <el-descriptions-item label="Abstract">
-                            <span v-if="!editing" 
-                                @click="editing = true; $nextTick(() => $refs.abstract.focus())">
-                                {{ currentPaper.abstract ? currentPaper.abstract : 'Abstract missing.' }}
+                            <span
+                                v-if="!editing"
+                                @click="
+                                    editing = true;
+                                    $nextTick(() => $refs.abstract.focus());
+                                "
+                            >
+                                {{
+                                    currentPaper.abstract
+                                        ? currentPaper.abstract
+                                        : "Abstract missing."
+                                }}
                             </span>
-                            <el-input v-else ref="abstract"
+                            <el-input
+                                v-else
+                                ref="abstract"
                                 type="textarea"
                                 v-model="currentPaper.abstract"
                                 :autosize="{ minRows: 4 }"
@@ -163,7 +187,8 @@ export default {
 
     data() {
         return {
-            filter: "",
+            filter: '',
+            filterMethod: 'boolean',
             // currentPage: 1,
             filteredCount: this.data.length,
             filteredData: this.data,
@@ -260,6 +285,7 @@ export default {
                 return;
             }
             this.filteredData = filter(
+                this.filterMethod,
                 this.data, 
                 this.filter, 
                 tag ? ['tags'] : ['title', 'abstract', 'keywords', 'tags'],
