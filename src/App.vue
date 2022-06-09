@@ -129,7 +129,8 @@ export default {
 
     watch: {
         projectPath () {
-            appWindow.setTitle(`${this.projectPath} - Snowball`);
+            const fileName = this.projectPath.split('\\').pop().split('/').pop();
+            appWindow.setTitle(`${fileName} - Snowball`);
         }
     },
 };

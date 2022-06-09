@@ -1,5 +1,5 @@
 import { createStore } from 'vuex'
-import { writeProject, writePaper, writeIndex } from '@/utils/io'
+import { writeProject, writePaper, writeSheet, writeIndex } from '@/utils/io'
 
 
 const filePersistence = (store) => {
@@ -19,6 +19,9 @@ const filePersistence = (store) => {
             writePaper(state, mutation.payload.paper);
         } else if (mutation.type === 'addTag') {
             writeIndex(state);
+        } else if (mutation.type === 'addSheet') {
+            writeIndex(state);
+            writeSheet(state, mutation.payload.id);
         }
     });
 }

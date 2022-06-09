@@ -14,6 +14,14 @@
                 <el-button @click="$emit('snowball')" plain type="primary">
                     Snowball from included papers »
                 </el-button>
+
+                <el-button @click="createNewSheet" plain v-if="filteredData.length && filteredData.length !== data.length">
+                    New sheet from filtered
+                </el-button>
+
+                <!-- <el-button @click="createSmartTag" plain v-if="filteredData.length && filteredData.length !== data.length">
+                    Create smart tag
+                </el-button> -->
             </el-col>
             <el-col :span="12">
                 <el-input
@@ -44,9 +52,9 @@
                         }}
                     </template>
                     <template #append>
-                        <el-button @click="filterPapers(false)"
-                            >Filter</el-button
-                        >
+                        <el-button-group>
+                            <el-button icon="Search" @click="filterPapers(false)"></el-button>
+                        </el-button-group>
                     </template>
                 </el-input>
             </el-col>
@@ -69,120 +77,37 @@
                 </el-auto-resizer>
             </el-col>
             <el-col v-if="currentPaper" :span="8">
-                <el-row>
-                    <el-page-header
-                        title=" "
-                        icon="Close"
-                        style="padding: 1rem; vertical-align: center"
-                        @click="currentPaper = null"
-                    />
-                </el-row>
-                <el-row
-                    style="overflow-y: auto"
-                    :style="{ height: `${tableHeight}px` }"
-                >
-                    <el-descriptions
-                        :title="currentPaper.title"
-                        :column="1"
-                        direction="vertical"
-                        style="padding: 1rem; padding-bottom: 20rem"
-                    >
-                        <el-descriptions-item>
-                            <tag-editor
-                                :tags="currentPaper.tags"
-                                :paper-id="currentPaper.id"
-                            />
-                        </el-descriptions-item>
-
-                        <el-descriptions-item label="Authors">
-                            {{
-                                currentPaper.authors
-                                    .map(
-                                        (author) =>
-                                            `${author.given} ${author.family}`
-                                    )
-                                    .join(", ")
-                            }}
-                        </el-descriptions-item>
-
-                        <el-descriptions-item label="Abstract">
-                            <span
-                                v-if="!editing"
-                                @click="
-                                    editing = true;
-                                    $nextTick(() => $refs.abstract.focus());
-                                "
-                            >
-                                {{
-                                    currentPaper.abstract
-                                        ? currentPaper.abstract
-                                        : "Abstract missing."
-                                }}
-                            </span>
-                            <el-input
-                                v-else
-                                ref="abstract"
-                                type="textarea"
-                                v-model="currentPaper.abstract"
-                                :autosize="{ minRows: 4 }"
-                                placeholder="Abstract missing."
-                                @change="
-                                    $store.commit('updatePaper', {
-                                        paper: currentPaper.id,
-                                        updates: { abstract: $event },
-                                    })
-                                "
-                                @blur="editing = false"
-                            />
-                        </el-descriptions-item>
-
-                        <el-descriptions-item label="Year">
-                            {{ currentPaper.year }}
-                        </el-descriptions-item>
-
-                        <el-descriptions-item label="Notes">
-                            <el-input
-                                type="textarea"
-                                v-model="currentPaper.notes"
-                                :autosize="{ minRows: 4 }"
-                                placeholder="Type out any notes here."
-                                @change="
-                                    $store.commit('updatePaper', {
-                                        paper: currentPaper.id,
-                                        updates: { notes: $event },
-                                    })
-                                "
-                            />
-                        </el-descriptions-item>
-                    </el-descriptions>
-                </el-row>
+                <paper-panel ref="paperPanel"
+                    :height="tableHeight"
+                    :paper="currentPaper"
+                    :filter="filter"
+                    :filter-method="filterMethod"
+                    :filter-active="filteredData.length && filteredData.length !== data.length"
+                    @close-panel="currentPaper = null"/>
             </el-col>
         </el-row>
     </div>
 </template>
 
 <script lang="jsx">
-import { formatAuthors } from '@/utils/import'
+import { trace, info } from 'tauri-plugin-log-api';
+
+import { formatAuthors } from '@/utils/import';
 import { filter } from '@/utils/search';
 import { processTags } from '@/utils/tags';
 
-import TagEditor from '@/components/TagEditor.vue'
+import PaperPanel from '@/components/PaperPanel.vue'
 
 export default {
     name: "DataTable",
     components: {
-        TagEditor
+        PaperPanel
     },
     props: {
         data: {
             type: Array,
             required: true
-        },
-        perPage: Number,
-    },
-
-    setup() {
-        console.log("setup");
+        }
     },
 
     data() {
@@ -196,7 +121,6 @@ export default {
             tableWidth: 0,
             tableHeight: 0,
             defaultWidths: [],
-            editing: false,
             columns: [
                 {
                     key: "include",
@@ -291,16 +215,20 @@ export default {
                 tag ? ['tags'] : ['title', 'abstract', 'keywords', 'tags'],
                 { tags: (tags, paper) => processTags(paper).map(tag => tag.text).join(' ') }
             );
+            
+            if (this.$refs.paperPanel) {
+                this.$refs.paperPanel.highlight();
+            }
         },
 
         onRowClick(event) {
-            this.currentPaper = event.rowData;
+            this.currentPaper = event.rowData.id;
             this.editing = false;
         },
 
         rowClass(row) {
             let classes = [];
-            if (this.currentPaper && row.rowData.id === this.currentPaper.id) {
+            if (this.currentPaper && row.rowData.id === this.currentPaper) {
                 classes.push('selected');
             }
             if (row.rowData.sheets.length > 1) {
@@ -335,7 +263,25 @@ export default {
                     column.width = this.defaultWidths[columnId];
                 }
             }
-        }
+        },
+
+        createNewSheet() {
+            info(`Creating new sheet from ${this.filteredData.length} filtered papers.`);
+            const sheetId = `layer-${Object.keys(this.$store.state.sheets).length}`;
+            const sheetName = `Layer ${Object.keys(this.$store.state.sheets).length}`;
+            trace(`Adding new sheet (${sheetId}) named '${sheetName}'.`);
+            this.$store.commit('addSheet', {
+                id: sheetId, 
+                name: sheetName, 
+                papers: this.filteredData.map(paper => paper.id)
+            });
+            // trace(`Setting active sheet to '${sheetId}'.`);
+            // this.activeSheet = sheetId;
+        },
+
+        // createSmartTag() {
+
+        // }
     },
 
     watch: {

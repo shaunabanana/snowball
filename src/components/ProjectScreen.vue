@@ -56,6 +56,7 @@ export default {
     methods: {
         newProject() {
             save({ filters: [{ name: '', extensions: ["snowball"] }] }).then((savePath) => {
+                if (!savePath) return;
                 this.$store.commit('setProjectPath', savePath);
                 this.$emit("update:modelValue", savePath);
             });
