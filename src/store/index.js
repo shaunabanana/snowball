@@ -78,15 +78,16 @@ export default createStore({
                 paper['notes'] = '';
                 paper['sheets'] = [];
 
-                if (state.papers[paper.id]) {
-                    console.log("Existing paper", paper);
-                    if (!state.sheets[payload.sheet].papers.includes(paper.id)) {
-                        state.sheets[payload.sheet].papers.push(paper.id);
-                    }
-                    if (!state.papers[paper.id].sheets.includes(payload.sheet)) {
-                        state.papers[paper.id].sheets.push(payload.sheet);
-                    }
-                } else {
+                // if (state.papers[paper.id]) {
+                //     console.log("Existing paper", paper);
+                //     if (!state.sheets[payload.sheet].papers.includes(paper.id)) {
+                //         state.sheets[payload.sheet].papers.push(paper.id);
+                //     }
+                //     if (!state.papers[paper.id].sheets.includes(payload.sheet)) {
+                //         state.papers[paper.id].sheets.push(payload.sheet);
+                //     }
+                // } else {
+                if (!state.papers[paper.id]) {
                     state.papers[paper.id] = paper;
                     if (!state.sheets[payload.sheet].papers.includes(paper.id)) {
                         state.sheets[payload.sheet].papers.push(paper.id);
