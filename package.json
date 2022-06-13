@@ -5,12 +5,23 @@
   "scripts": {
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint"
+    "lint": "vue-cli-service lint",
+    "electron:build": "vue-cli-service electron:build",
+    "electron:serve": "vue-cli-service electron:serve",
+    "postinstall": "electron-builder install-app-deps",
+    "postuninstall": "electron-builder install-app-deps"
   },
+  "main": "background.js",
   "dependencies": {
+    "@arco-design/web-vue": "^2.30.2",
+    "@spaceavocado/librarian": "^0.4.5",
+    "axios": "^0.27.2",
+    "citation-js": "^0.6.2",
     "core-js": "^3.8.3",
+    "sanitize-basename": "^2.0.0",
     "vue": "^3.2.13",
-    "vuex": "^4.0.0"
+    "vuex": "^4.0.0",
+    "yaml": "^2.1.1"
   },
   "devDependencies": {
     "@babel/core": "^7.12.16",
@@ -20,11 +31,15 @@
     "@vue/cli-plugin-vuex": "~5.0.0",
     "@vue/cli-service": "~5.0.0",
     "@vue/eslint-config-airbnb": "^6.0.0",
+    "electron": "^19.0.0",
+    "electron-devtools-installer": "^3.1.0",
     "eslint": "^7.32.0",
     "eslint-plugin-import": "^2.25.3",
     "eslint-plugin-vue": "^8.0.3",
     "eslint-plugin-vuejs-accessibility": "^1.1.0",
+    "prettier": "^2.6.2",
     "sass": "^1.32.7",
-    "sass-loader": "^12.0.0"
+    "sass-loader": "^12.0.0",
+    "vue-cli-plugin-electron-builder": "~2.1.1"
   }
 }
