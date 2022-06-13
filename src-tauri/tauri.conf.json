@@ -53,7 +53,7 @@
     "updater": {
       "active": true,
       "endpoints": [
-          "https://gist.github.com/shaunabanana/0dcc47e0449b37f9bb64fe2abc556c36"
+          "https://gist.githubusercontent.com/shaunabanana/0dcc47e0449b37f9bb64fe2abc556c36/raw/ce013ed69e13a14ae6434f20c9b08c2795975071/snowball.json"
       ],
       "dialog": true,
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDJCQjU0QUQzQjA0QzBEQkQKUldTOURVeXcwMHExSzl4VTN2b0pBTytuSGVHWlpJeDlYQytuamdJN2cySEJ5ejlYMTc5Y3NuYmEK"
