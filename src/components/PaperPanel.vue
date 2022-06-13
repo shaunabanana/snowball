@@ -146,19 +146,23 @@ export default {
         },
 
         highlight() {
-            if (!this.currentPaper || !this.filterActive) return;
-            const mark = new Mark(this.$refs.abstract);
-            mark.unmark();
-            console.log('highlight', this.currentPaper, this.filter, this.filterMethod, this.filterActive);
-            if (this.filterMethod === 'boolean') {
-                const abstractMatches = match(this.filterMethod, this.currentPaper.abstract, this.filter);
-                nextTick(() => {
-                    mark.markRanges(abstractMatches);
-                })
-            } else if (this.filterMethod === 'regex'){
-                nextTick(() => {
-                    mark.markRegExp(new RegExp(this.filter));
-                })
+            if (!this.currentPaper || this.filter.length === 0) return;
+            try {
+                const mark = new Mark(this.$refs.abstract);
+                mark.unmark();
+                console.log('highlight', this.currentPaper, this.filter, this.filterMethod, this.filterActive);
+                if (this.filterMethod === 'boolean') {
+                    const abstractMatches = match(this.filterMethod, this.currentPaper.abstract, this.filter);
+                    nextTick(() => {
+                        mark.markRanges(abstractMatches);
+                    })
+                } else if (this.filterMethod === 'regex'){
+                    nextTick(() => {
+                        mark.markRegExp(new RegExp(this.filter));
+                    })
+                }
+            } catch {
+                return;
             }
         },
     },
