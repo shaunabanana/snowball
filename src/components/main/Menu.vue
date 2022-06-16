@@ -10,6 +10,7 @@
         @focusout="collapsed = true"
     >
         <a-menu
+            :selected-keys="selectedKeys"
             :default-selected-keys="['project']"
             :style="{ width: '100%' }"
             @menu-item-click="onClickMenuItem"
@@ -32,7 +33,6 @@
 
 <script>
 import { ref } from 'vue';
-import { Message } from '@arco-design/web-vue';
 import { IconHome, IconFile, IconSettings } from '@arco-design/web-vue/es/icon';
 
 export default {
@@ -43,6 +43,13 @@ export default {
         IconSettings,
     },
 
+    props: {
+        item: {
+            type: String,
+            default: 'project',
+        },
+    },
+
     setup() {
         return {
             collapsed: ref(true),
@@ -51,7 +58,15 @@ export default {
 
     methods: {
         onClickMenuItem(key) {
-            Message.info({ content: `You select ${key}`, showIcon: true });
+            console.log(key);
+            this.$emit('update:item', key);
+        },
+    },
+
+    computed: {
+        selectedKeys() {
+            console.log([this.item]);
+            return [this.item];
         },
     },
 };

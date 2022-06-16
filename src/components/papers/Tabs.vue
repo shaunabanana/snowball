@@ -1,5 +1,5 @@
 <template>
-    <a-tabs default-active-key="2" :editable="true">
+    <a-tabs size="medium" default-active-key="2" :editable="true">
         <a-tab-pane key="1">
             <template #title>Tab 3</template>
         </a-tab-pane>
