@@ -1,6 +1,6 @@
 {
   "name": "snowball",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",
@@ -16,9 +16,12 @@
     "@spaceavocado/librarian": "^0.4.5",
     "@tauri-apps/api": "^1.0.0-rc.6",
     "axios": "^0.27.2",
+    "bibliothecary": "^1.0.2",
     "citation-js": "^0.5.7",
     "core-js": "^3.8.3",
     "element-plus": "^2.2.2",
+    "moo": "^0.5.1",
+    "nearley": "^2.20.1",
     "querystring-es3": "^0.2.1",
     "sanitize-basename": "^2.0.0",
     "tauri-plugin-fs-extra-api": "github:tauri-apps/tauri-plugin-fs-extra",

@@ -1,6 +1,6 @@
 [package]
 name = "Snowball"
-version = "0.1.3"
+version = "0.1.4"
 description = "Find and filter literature, fast."
 authors = ["Shengchen Zhang"]
 license = "MIT"

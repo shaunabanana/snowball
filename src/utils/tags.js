@@ -1,10 +1,19 @@
 export function processTags(paper) {
-    const dynamicTags = [];
-    if (!paper.doi) dynamicTags.push({
-        type: "danger", text: "No DOI"
+  const dynamicTags = [];
+  if (paper.include)
+    dynamicTags.push({
+      type: "success",
+      text: "Included",
     });
-    if (!paper.abstract) dynamicTags.push({
-        type: "warning", text: "No Abstract"
+  if (!paper.doi)
+    dynamicTags.push({
+      type: "danger",
+      text: "No DOI",
     });
-    return dynamicTags.concat(paper.tags);
+  if (!paper.abstract)
+    dynamicTags.push({
+      type: "warning",
+      text: "No Abstract",
+    });
+  return dynamicTags.concat(paper.tags);
 }
