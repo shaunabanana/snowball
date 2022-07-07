@@ -1,31 +1,41 @@
 <template>
     <a-layout class="app">
-        <Menu v-model:item="currentScreen" />
-        <ProjectScreen v-if="currentScreen === 'project'" />
-        <PapersScreen v-if="currentScreen === 'screening'" />
+        <Menu v-if="$store.state.projectPath" v-model:item="currentScreen" />
+        <LoadProject />
+        <LoadingWait :visible="$store.state.loading"/>
+        <ProjectScreen v-if="$store.state.projectPath && currentScreen === 'project'" />
+        <PapersScreen v-if="$store.state.projectPath && currentScreen === 'screening'" />
     </a-layout>
 </template>
 
 <script>
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { ipcRenderer } from 'electron';
 import { Message } from '@arco-design/web-vue';
+import log from 'electron-log';
 
 import Menu from '@/components/main/Menu.vue';
+import LoadProject from '@/components/main/LoadProject.vue';
+import LoadingWait from '@/components/main/LoadingWait.vue';
 import ProjectScreen from '@/components/project/Main.vue';
 import PapersScreen from '@/components/papers/Main.vue';
 
-import Query from '@/search';
+// import Query from '@/search';
 
 export default {
     name: 'App',
     components: {
         Menu,
+        LoadProject,
+        LoadingWait,
         ProjectScreen,
         PapersScreen,
     },
 
     data() {
         return {
-            currentScreen: 'project',
+            currentScreen: 'screening',
+            projectPath: null,
         };
     },
 
@@ -35,14 +45,11 @@ export default {
             Message.error(message);
         };
 
-        const query = new Query(
-            'ro?ot NEAR/3 knowledge',
-        );
-        console.log(
-            query.search(
-                'knowledge of robots',
-            ),
-        );
+        Object.assign(console, log.functions);
+
+        ipcRenderer.invoke('get-version').then((version) => {
+            this.$store.commit('setVersion', version);
+        });
     },
 };
 </script>

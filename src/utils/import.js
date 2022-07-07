@@ -18,16 +18,22 @@ export function formatAuthors(authors) {
 function processBibTex(fileContent) {
     const preprocessed = fileContent.replace(/([^\\])\$/g, '$1\\$');
     const bib = Cite(preprocessed);
-    return bib.data.map((record) => ({
-        id: record.DOI ? record.DOI : record.id,
-        doi: record.DOI,
-        type: record.type,
-        title: record.title,
-        authors: record.author ? record.author : [],
-        abstract: record.abstract,
-        year: record.issued ? record.issued['date-parts'][0][0] : 'Unknown',
-        keywords: record.keyword ? record.keyword.split(',').map((s) => s.trim()) : [],
-    }));
+    return bib.data.map((record) => {
+        const originalRecord = { ...record };
+        // eslint-disable-next-line no-underscore-dangle
+        delete originalRecord._graph;
+        return {
+            id: record.DOI ? record.DOI : record.id,
+            doi: record.DOI,
+            type: record.type,
+            title: record.title,
+            authors: record.author ? record.author : [],
+            abstract: record.abstract,
+            year: record.issued ? record.issued['date-parts'][0][0] : 'Unknown',
+            keywords: record.keyword ? record.keyword.split(',').map((s) => s.trim()) : [],
+            record: originalRecord,
+        };
+    });
 }
 
 export function processFile(file) {

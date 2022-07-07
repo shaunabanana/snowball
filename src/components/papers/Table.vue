@@ -2,70 +2,81 @@
     <a-table
         class="paper-table"
         id="paper-table"
+        ref="table"
         size="small"
+        row-key="id"
         :bordered="false"
-        :data="data"
+        :data="$store.getters.currentPapers"
         :row-selection="rowSelection"
+        :selected-keys="$store.state.selection"
         :virtual-list-props="{ height: height }"
         :pagination="false"
-        :scroll="{ x: '100%', y: '100%' }"
+        :scroll="{ x: 980, y: '100%' }"
+        @row-click="selectRow"
+        @selection-change="selectionChanged"
     >
         <template #columns>
             <a-table-column
                 title="Decision"
-                :width="145"
-                :sortable="{
-                    sortDirections: ['ascend', 'descend'],
-                }"
-            >
-                <!-- <template #cell="{ record }"> -->
-                <template #cell="{}">
-                    <a-select
-                        size="mini"
-                        style="width: 112px"
-                        defaultValue="Undecided"
-                        placeholder="Select"
-                        :trigger-props="{ autoFitPopupMinWidth: true }"
-                    >
-                        <a-option>Undecided</a-option>
-                        <a-option>Include</a-option>
-                        <a-option>Exclude</a-option>
-                    </a-select>
-                </template>
-            </a-table-column>
-
-            <a-table-column
-                title="Title"
-                data-index="name"
-                :sortable="{
-                    sortDirections: ['ascend', 'descend'],
-                }"
-            >
-                <template #cell="{ record }">
-                    <a-typography-paragraph
-                        spacing="close"
-                        style="margin-bottom: 0; font-size: 0.8rem"
-                        :bold="true"
-                    >
-                        {{ record.name }}
-                    </a-typography-paragraph>
-                </template>
-            </a-table-column>
-
-            <a-table-column
-                title="Authors"
-                data-index="address"
+                data-index="decision"
                 :width="120"
                 :sortable="{
                     sortDirections: ['ascend', 'descend'],
                 }"
             >
                 <template #cell="{ record }">
+                    <a-radio-group
+                        type="button"
+                        size="mini"
+                        :model-value="record.decision"
+                        :class="record.decision"
+                        @change="$store.commit('updatePaper', {
+                            paper: record.id,
+                            updates: { decision: $event }
+                        })"
+                    >
+                        <a-radio value="exclude">
+                            <icon-close />
+                        </a-radio>
+                        <a-radio value="undecided">
+                            <icon-question />
+                        </a-radio>
+                        <a-radio value="include">
+                            <icon-check />
+                        </a-radio>
+                    </a-radio-group>
+                </template>
+            </a-table-column>
+
+            <a-table-column
+                title="Title"
+                data-index="title"
+                :sortable="{
+                    sortDirections: ['ascend', 'descend'],
+                }"
+            >
+                <template #cell="{ record }">
                     <a-typography-paragraph
                         spacing="close"
-                        style="margin-bottom: 0; font-size: 0.8rem"
+                        class="body-text"
+                        :bold="true"
                     >
-                        {{ record.address }}
+                        {{ record.title }}
+                    </a-typography-paragraph>
+                </template>
+            </a-table-column>
+
+            <a-table-column
+                title="Authors"
+                data-index="authors"
+                :width="120"
+            >
+                <template #cell="{ record }">
+                    <a-typography-paragraph
+                        spacing="close"
+                        class="body-text"
+                    >
+                        {{ formatAuthors(record.authors) }}
                     </a-typography-paragraph>
                 </template>
             </a-table-column>
@@ -85,51 +96,47 @@
                 :sortable="{
                     sortDirections: ['ascend', 'descend'],
                 }"
-            ></a-table-column>
+            >
+                <template #cell="{ record }">
+                    <TagList :paper="record" />
+                </template>
+            </a-table-column>
         </template>
     </a-table>
 </template>
 
 <script>
+import TagList from '@/components/tags/TagList.vue';
+
+import { formatAuthors } from '@/utils/import';
+
 export default {
     name: 'PaperTable',
-    components: {},
+    components: { TagList },
 
     props: {
-        // data: Array,
+        data: {
+            type: Array,
+            default: () => [],
+        },
         width: {
             type: Number,
             default: 100,
         },
-        // height: {
-        //     type: Number,
-        //     default: 200,
-        // },
     },
 
     data() {
         return {
             height: 200,
-            data: Array(1000)
-                .fill(null)
-                .map((_, index) => ({
-                    key: String(index),
-                    name: `32 Park Road London 32 Park Road London 32 Park Road London User ${
-                        index + 1
-                    }`,
-                    address: '32 Park Road, London',
-                    email: `user.${index + 1}@example.com`,
-                    year: index,
-                })),
             rowSelection: {
                 type: 'checkbox',
                 showCheckedAll: true,
             },
+            selectedKeys: [],
         };
     },
 
     mounted() {
-        console.log(this.$el);
         const observer = new ResizeObserver((events) => {
             events.forEach((event) => {
                 if (event.target.id !== 'paper-table') return;
@@ -139,12 +146,56 @@ export default {
         observer.observe(this.$el);
     },
 
-    methods: {},
+    methods: {
+        formatAuthors(authors) {
+            return formatAuthors(authors);
+        },
+
+        selectRow(record) {
+            this.$store.commit('setSelection', [record.id]);
+            this.updateActivePaper();
+        },
+
+        selectionChanged(keys) {
+            this.$store.commit('setSelection', keys);
+        },
+
+        updateActivePaper() {
+            if (this.$store.state.selection.length === 1) {
+                this.$store.commit('setActivePaper', this.$store.state.selection[0]);
+            } else {
+                this.$store.commit('setActivePaper', null);
+            }
+        },
+    },
+
+    // watch: {
+    //     // eslint-disable-next-line func-names
+    //     '$store.getters.currentPapers': function () {
+    //         console.log(this.$refs.table);
+    //     },
+    // },
 };
 </script>
 
-<style scoped>
-/* .paper-table {
-    position: absolute;
-} */
+<style>
+span .arco-radio-button-content {
+    padding: 0 6px !important;
+}
+
+.body-text {
+    margin-bottom: 0px !important;
+    font-size: 0.8rem;
+    word-break: normal;
+}
+
+.include .arco-radio-button.arco-radio-checked {
+    background-color: rgb(var(--green-6)) !important;
+    color: var(--color-bg-5) !important;
+}
+
+.exclude .arco-radio-button.arco-radio-checked {
+    background-color: rgb(var(--red-6)) !important;
+    color: var(--color-bg-5) !important;
+}
 </style>

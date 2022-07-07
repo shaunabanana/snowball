@@ -5,42 +5,18 @@
         </a-layout-header>
         <a-layout style="padding: 0 0 0 24px">
             <a-layout-content>
-                <a-space direction="vertical">
-                    <Toolbar />
-                    <a-split
-                        :default-size="0.7"
-                        :style="{
-                            height: `${height}px`,
-                            width: '100%',
-                        }"
-                        v-model:size="detailsSize"
-                    >
-                        <template #first>
-                            <div>
-                                <a-split
-                                    direction="vertical"
-                                    :default-size="0.8"
-                                    v-model:size="tableSize"
-                                    :style="{ height: `${height}px` }"
-                                >
-                                    <template #first>
-                                        <Table :height="tableHeight" />
-                                    </template>
-                                    <template #second>
-                                        <div style="padding: 0.5rem">
-                                            <a-space wrap>
-                                                <a-tag closable checkable> Tag </a-tag>
-                                                <a-tag closable checkable> Tag </a-tag>
-                                            </a-space>
-                                        </div>
-                                    </template>
-                                </a-split>
-                            </div>
-                        </template>
-                        <template #second>
-                            <PaperDetails />
-                        </template>
-                    </a-split>
+                <a-space direction="vertical" fill
+                    style="height: 100%; padding-right: 1rem; margin-bottom: 1rem"
+                >
+                    <Toolbar @snowball="snowball"/>
+                    <ScreeningView
+                        v-if="$store.getters.currentSheet.papers.length !== 0"
+                        :height="height"
+                    />
+                    <FileLoader
+                        v-if="$store.getters.currentSheet.papers.length === 0"
+                        @import="addImportedPapers"
+                    />
                 </a-space>
             </a-layout-content>
             <!-- <a-layout-footer>Footer</a-layout-footer> -->
@@ -50,17 +26,19 @@
 
 <script>
 import Tabs from '@/components/papers/Tabs.vue';
-import Table from '@/components/papers/Table.vue';
 import Toolbar from '@/components/papers/Toolbar.vue';
-import PaperDetails from '@/components/papers/PaperDetails.vue';
+import ScreeningView from '@/components/papers/ScreeningView.vue';
+import FileLoader from '@/components/papers/FileLoader.vue';
+
+import querySemanticScholar from '@/utils/literature';
 
 export default {
     name: 'PapersScreen',
     components: {
         Tabs,
-        Table,
         Toolbar,
-        PaperDetails,
+        ScreeningView,
+        FileLoader,
     },
 
     // props: {
@@ -69,11 +47,45 @@ export default {
 
     data() {
         return {
-            detailsSize: 0.7,
-            tableSize: 0.8,
             height: 600,
-            tableHeight: 100,
         };
+    },
+
+    methods: {
+        addImportedPapers(papers) {
+            console.log(`Adding ${papers.length} new papers to sheet '${this.$store.state.activeSheet}'.`);
+            this.$store.commit('addPapers', {
+                sheet: this.$store.state.activeSheet,
+                papers,
+            });
+            console.log('Removing loading screen.');
+            this.$store.commit('setLoading', false);
+        },
+
+        snowball() {
+            console.log('Showing loading screen.');
+            this.$store.commit('setLoading', true);
+            const includedPapers = this.$store.getters.activeIncludedPapers;
+
+            const newPapers = [];
+            Promise.all(
+                includedPapers.map((paper) => querySemanticScholar(paper.doi)),
+            ).then((results) => {
+                results.forEach((result) => {
+                    result.citations.forEach((paper) => newPapers.push(paper));
+                    result.references.forEach((paper) => newPapers.push(paper));
+                });
+                const sheetId = `layer-${Object.keys(this.$store.state.sheets).length}`;
+                const sheetName = `Layer ${Object.keys(this.$store.state.sheets).length}`;
+                console.log(`Adding new sheet (${sheetId}) named '${sheetName}'.`);
+                this.$store.commit('addSheet', { id: sheetId, name: sheetName, papers: [] });
+                console.log(`Setting active sheet to '${sheetId}'.`);
+                this.$store.commit('setActiveSheet', sheetId);
+                this.addImportedPapers(newPapers);
+
+                console.info(`Snowballing finished for ${newPapers.length} papers.`);
+            });
+        },
     },
 
     mounted() {
@@ -86,12 +98,6 @@ export default {
             });
         });
         resizeObserver.observe(this.$refs.mainContainer.$el);
-    },
-
-    methods: {
-        resizeTable() {
-            // console.log(event);
-        },
     },
 };
 </script>

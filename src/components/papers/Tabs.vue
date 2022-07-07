@@ -1,13 +1,20 @@
 <template>
-    <a-tabs size="medium" default-active-key="2" :editable="true">
-        <a-tab-pane key="1">
-            <template #title>Tab 3</template>
-        </a-tab-pane>
-        <a-tab-pane key="2">
-            <template #title>Tab 3</template>
-        </a-tab-pane>
-        <a-tab-pane key="3">
-            <template #title>Tab 3</template>
+    <a-tabs size="medium" editable :default-active-key="$store.state.activeSheet"
+        v-model="activeSheet"
+        @change="$store.commit('setActiveSheet', $event)"
+    >
+        <a-tab-pane v-for="sheet of $store.state.sheets" :key="sheet.id"
+            :closable="sheet.id !== 'core'"
+        >
+            <template #title>
+                <a-typography-paragraph
+                    v-model:editText="sheet.name"
+                    style="margin-bottom: 0"
+                    :editable="sheet.id !== 'core' && sheet.id === $store.state.activeSheet"
+                >
+                    {{ sheet.name }}
+                </a-typography-paragraph>
+            </template>
         </a-tab-pane>
     </a-tabs>
 </template>
@@ -17,9 +24,18 @@ export default {
     name: 'PaperTabs',
     components: {},
 
-    setup() {},
+    data() {
+        return {
+            activeSheet: 'core',
+        };
+    },
 
-    methods: {},
+    watch: {
+        // eslint-disable-next-line func-names
+        '$store.state.activeSheet': function () {
+            this.activeSheet = this.$store.state.activeSheet;
+        },
+    },
 };
 </script>
 

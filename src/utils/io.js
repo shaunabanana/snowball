@@ -1,5 +1,7 @@
+/* eslint-disable import/no-extraneous-dependencies */
 import { join } from 'path';
-import { readFile, writeFile, mkdirSync } from 'fs';
+import { mkdirSync, rmdirSync, existsSync } from 'fs';
+import { readFile, writeFile } from 'fs/promises';
 import { stringify, parse } from 'yaml';
 import sanitize from 'sanitize-basename';
 
@@ -8,12 +10,13 @@ const FORMAT = '.yaml';
 export function writeIndex(projectData) {
     const indexPath = join(projectData.projectPath, `index${FORMAT}`);
     const indexData = {
+        version: projectData.version,
         sheets: Object.keys(projectData.sheets).map((key) => ({
             id: key,
             name: projectData.sheets[key].name,
         })),
         papers: Object.keys(projectData.papers),
-        tags: [...projectData.tags],
+        tags: { ...projectData.tags },
     };
     writeFile(indexPath, stringify(indexData), {
         encoding: 'utf8',
@@ -36,6 +39,9 @@ export function writePaper(projectData, paperId) {
 
 export function writeProject(projectData) {
     console.log(projectData);
+    if (existsSync(projectData.projectPath)) {
+        rmdirSync(projectData.projectPath, { recursive: true });
+    }
     mkdirSync(projectData.projectPath);
 
     writeIndex(projectData);
@@ -84,7 +90,7 @@ export function readSheet(path, sheetId) {
 export function readPaper(path, paperId) {
     return new Promise((resolve, reject) => {
         const paperPath = join(path, 'papers', sanitize(paperId) + FORMAT);
-        readFile('read_file', { path: paperPath }).then((paperContent) => {
+        readFile(paperPath, { encoding: 'utf8' }).then((paperContent) => {
             try {
                 const paperData = parse(paperContent);
                 resolve(paperData);
@@ -109,29 +115,29 @@ export function readProject(path) {
             projectData.tags = indexData.tags;
 
             // Read sheets
-            Promise.all(
-                indexData.sheets.map((sheetInfo) => readSheet(path, sheetInfo.id)),
-            ).then((sheetsData) => {
-                console.log(sheetsData);
-                sheetsData.forEach((sheet) => {
-                    projectData.sheets[sheet.id] = sheet;
-                });
-
-                // Read papers
-                Promise.all(
-                    indexData.papers.map((paperId) => readPaper(path, paperId)),
-                ).then((papersData) => {
-                    console.log(papersData);
-                    papersData.forEach((paper) => {
-                        projectData.papers[paper.id] = paper;
+            Promise.all(indexData.sheets.map((sheetInfo) => readSheet(path, sheetInfo.id)))
+                .then((sheetsData) => {
+                    console.log(sheetsData);
+                    sheetsData.forEach((sheet) => {
+                        projectData.sheets[sheet.id] = sheet;
                     });
 
-                    // Finally resolve the promise
-                    resolve(projectData);
+                    // Read papers
+                    Promise.all(indexData.papers.map((paperId) => readPaper(path, paperId))).then(
+                        (papersData) => {
+                            console.log(papersData);
+                            papersData.forEach((paper) => {
+                                projectData.papers[paper.id] = paper;
+                            });
+
+                            // Finally resolve the promise
+                            resolve(projectData);
+                        },
+                    );
+                })
+                .catch((errors) => {
+                    console.log('Error when reading sheets', errors);
                 });
-            }).catch((errors) => {
-                console.log('Error when reading sheets', errors);
-            });
         });
     });
 }

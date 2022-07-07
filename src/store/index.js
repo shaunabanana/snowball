@@ -1,27 +1,36 @@
+/* eslint-disable object-curly-newline */
 import { createStore } from 'vuex';
-import {
-    writeProject, writePaper, writeSheet, writeIndex,
-} from '@/utils/io';
+import { nanoid } from 'nanoid';
+import { writeProject, writePaper, writeSheet, writeIndex } from '@/utils/io';
+import { filter } from '@/utils/search';
+import { processTags, updateAutoTags } from '@/utils/tags';
 
 const filePersistence = (store) => {
     const ignoreEvents = ['setLoading', 'setProjectPath', 'loadProject'];
     // called when the store is initialized
     store.subscribe((mutation, state) => {
         if (ignoreEvents.includes(mutation.type)) return;
-        console.log(mutation);
         if (mutation.type === 'addPapers') {
-            console.log(state);
-            console.log('Saving state to', state.projectPath);
-            const startTime = Date.now();
+            console.log('[addPapers] Saving state to', state.projectPath);
             writeProject(state);
-            console.log('Posting message took', Date.now() - startTime);
         } else if (mutation.type === 'updatePaper') {
-            writePaper(state, mutation.payload.paper);
-        } else if (mutation.type === 'addTag') {
+            console.log('[updatePaper]', JSON.stringify(mutation.payload));
+            let papers = mutation.payload.paper;
+            if (!Array.isArray(mutation.payload.paper)) papers = [mutation.payload.paper];
+            papers.forEach((paper) => writePaper(state, paper));
+        } else if (
+            mutation.type === 'addTag'
+            || mutation.type === 'deleteTag'
+            || mutation.type === 'updateTag'
+        ) {
+            console.log(`[${mutation.type}]`, JSON.stringify(mutation.payload));
             writeIndex(state);
         } else if (mutation.type === 'addSheet') {
+            console.log('[addSheet]', mutation.payload.id);
             writeIndex(state);
             writeSheet(state, mutation.payload.id);
+        } else {
+            console.log(`[${mutation.type}] ${JSON.stringify(mutation.payload)}`);
         }
     });
 };
@@ -37,11 +46,114 @@ export default createStore({
             },
         },
         papers: {},
-        tags: [],
+        tags: {},
+
+        created: null,
+        modified: null,
+
         loading: false,
+
+        filter: '',
+        filterTags: false,
+        filterMethod: 'Boolean',
+        filterChanged: false,
+        filterResult: [],
+
+        activeSheet: 'core',
+        activePaper: null,
+        selection: [],
     },
-    getters: {},
+    getters: {
+        currentSheet(state) {
+            return state.sheets[state.activeSheet];
+        },
+
+        currentPapers(state) {
+            const currentSheet = state.sheets[state.activeSheet];
+            const currentPapers = currentSheet.papers.map((id) => state.papers[id]);
+
+            if (state.filter.length === 0) return currentPapers;
+            if (!state.filterChanged) return state.filterResult;
+            state.filterResult = filter(
+                state.filterMethod,
+                currentPapers,
+                state.filter,
+                state.filterTags ? ['tags'] : ['title', 'abstract', 'keywords', 'tags'],
+                {
+                    tags: (tags, paper) =>
+                        // eslint-disable-next-line implicit-arrow-linebreak
+                        processTags(state, paper)
+                            .map((tag) => tag.text)
+                            .join(' '),
+                },
+            );
+            const newKeys = [];
+            state.filterResult.forEach((paper) => {
+                if (state.selection.includes(paper.id)) {
+                    newKeys.push(paper.id);
+                }
+            });
+            state.selection = newKeys;
+            state.filterChanged = false;
+            return state.filterResult;
+        },
+
+        decided(state) {
+            return Object.keys(state.papers).filter((paperId) => {
+                const paper = state.papers[paperId];
+                return paper.decision !== 'undecided';
+            }).map((paperId) => state.papers[paperId]);
+        },
+
+        included(state) {
+            return Object.keys(state.papers).filter((paperId) => {
+                const paper = state.papers[paperId];
+                return paper.decision === 'include';
+            }).map((paperId) => state.papers[paperId]);
+        },
+
+        excluded(state) {
+            return Object.keys(state.papers).filter((paperId) => {
+                const paper = state.papers[paperId];
+                return paper.decision === 'exclude';
+            }).map((paperId) => state.papers[paperId]);
+        },
+
+        tagUsageCount: (state) => (tagId) => Object.keys(state.papers).filter((paperId) => {
+            const paper = state.papers[paperId];
+            return paper.tags.includes(tagId);
+        }).length,
+
+        activeIncludedPapers(state) {
+            const currentSheet = state.sheets[state.activeSheet];
+            const currentPapers = currentSheet.papers.map((id) => state.papers[id]);
+            return currentPapers.filter((paper) => paper.decision === 'include');
+        },
+    },
     mutations: {
+        setVersion(state, value) {
+            state.version = value;
+        },
+
+        setSelection(state, value) {
+            state.selection = value;
+        },
+
+        setFilter(state, payload) {
+            state.filter = payload.filter;
+            state.filterTags = payload.tagsOnly;
+            state.filterMethod = payload.method;
+            state.filterChanged = true;
+        },
+
+        setActiveSheet(state, value) {
+            state.activeSheet = value;
+        },
+
+        setActivePaper(state, paperId) {
+            state.activePaper = paperId ? state.papers[paperId] : null;
+        },
+
         setLoading(state, value) {
             state.loading = value;
         },
@@ -54,9 +166,12 @@ export default createStore({
             state.sheets = data.sheets;
             state.papers = data.papers;
             state.tags = data.tags;
+
+            updateAutoTags(state);
         },
 
         addPapers(state, payload) {
+            console.log(state.sheets[payload.sheet]);
             payload.papers.sort((a, b) => {
                 if (typeof a.year === 'number' && typeof b.year === 'number') {
                     return b.year - a.year;
@@ -75,12 +190,16 @@ export default createStore({
 
                 paper.tags = [];
                 paper.include = false;
+                paper.decision = 'undecided';
                 paper.notes = '';
+                paper.comments = [];
                 paper.sheets = [];
 
+                console.log(paper.id, state.papers[paper.id]);
                 if (!state.papers[paper.id]) {
                     state.papers[paper.id] = paper;
                     if (!state.sheets[payload.sheet].papers.includes(paper.id)) {
+                        console.log(state.sheets[payload.sheet].papers, paper.id);
                         state.sheets[payload.sheet].papers.push(paper.id);
                     }
                     if (!paper.sheets.includes(payload.sheet)) {
@@ -88,17 +207,50 @@ export default createStore({
                     }
                 }
             });
+            console.log(state.sheets[payload.sheet]);
+
+            updateAutoTags(state);
         },
 
         updatePaper(state, payload) {
-            if (!state.papers[payload.paper]) return;
-            Object.entries(payload.updates).forEach(([key, value]) => {
-                state.papers[payload.paper][key] = value;
+            let papers = payload.paper;
+            if (!Array.isArray(payload.paper)) {
+                papers = [payload.paper];
+            }
+            papers.forEach((paper) => {
+                if (!state.papers[paper]) return;
+                Object.entries(payload.updates).forEach(([key, value]) => {
+                    state.papers[paper][key] = value;
+                });
             });
         },
 
         addTag(state, tag) {
-            if (!state.tags.includes(tag)) state.tags.push(tag);
+            let tagId = tag.id;
+            if (state.tags[tagId]) {
+                tagId += `-${nanoid()}`;
+            }
+            state.tags[tagId] = tag;
+            state.tags[tagId].id = tagId;
+            updateAutoTags(state);
+        },
+
+        updateTag(state, payload) {
+            let tags = payload.tag;
+            if (!Array.isArray(payload.tag)) {
+                tags = [payload.tag];
+            }
+            tags.forEach((tag) => {
+                if (!state.tags[tag]) return;
+                Object.entries(payload.updates).forEach(([key, value]) => {
+                    state.tags[tag][key] = value;
+                });
+            });
+        },
+
+        deleteTag(state, tag) {
+            delete state.tags[tag.id];
+            updateAutoTags(state);
         },
 
         addSheet(state, sheet) {

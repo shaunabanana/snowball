@@ -14,6 +14,7 @@ function formatSemanticScholarPaper(paper) {
         abstract: paper.abstract,
         year: paper.year ? paper.year : 'Unknown',
         keywords: [],
+        record: { ...paper },
     };
 }
 
@@ -22,7 +23,7 @@ export default function querySemanticScholar(doi) {
     const references = [];
 
     return new Promise((resolve) => {
-        axios.get(`https://api.semanticscholar.org/graph/v1/paper/${doi}/references?fields=title,url,abstract,authors,year,externalIds&limit=1000`).then((refResponse) => {
+        axios.get(`https://api.semanticscholar.org/graph/v1/paper/${doi}/references?fields=title,url,abstract,authors,year,externalIds,venue,journal&limit=1000`).then((refResponse) => {
             console.log('Got response for references', refResponse.data.data);
             refResponse.data.data.forEach((paper) => {
                 if (paper.citedPaper.paperId) {
@@ -30,13 +31,36 @@ export default function querySemanticScholar(doi) {
                 }
             });
 
-            axios.get(`https://api.semanticscholar.org/graph/v1/paper/${doi}/citations?fields=title,url,abstract,authors,year,externalIds&limit=1000`).then((citeResponse) => {
+            axios.get(`https://api.semanticscholar.org/graph/v1/paper/${doi}/citations?fields=title,url,abstract,authors,year,externalIds,venue,journal&limit=1000`).then((citeResponse) => {
                 console.log('Got response for citations', citeResponse.data.data);
                 citeResponse.data.data.forEach((paper) => {
                     if (paper.citingPaper.paperId) {
                         citations.push(formatSemanticScholarPaper(paper.citingPaper));
                     }
                 });
+                resolve({
+                    citations,
+                    references,
+                });
+            }).catch(() => {
+                resolve({
+                    citations,
+                    references,
+                });
+            });
+        }).catch(() => {
+            axios.get(`https://api.semanticscholar.org/graph/v1/paper/${doi}/citations?fields=title,url,abstract,authors,year,externalIds,venue,journal&limit=1000`).then((citeResponse) => {
+                console.log('Got response for citations', citeResponse.data.data);
+                citeResponse.data.data.forEach((paper) => {
+                    if (paper.citingPaper.paperId) {
+                        citations.push(formatSemanticScholarPaper(paper.citingPaper));
+                    }
+                });
+                resolve({
+                    citations,
+                    references,
+                });
+            }).catch(() => {
                 resolve({
                     citations,
                     references,

@@ -10,14 +10,15 @@ module.exports = defineConfig({
             builderOptions: {
                 fileAssociations: [
                     {
-                        ext: "intrigue",
-                        name: "Intrigue Literature Map",
-                        description: "Intrigue literature map file.",
-                        role: "Editor",
-                        icon: "document.icns"
-                    }
-                ]
-            }
-        }
-    }
+                        ext: 'snowball',
+                        name: 'Snowball Project',
+                        description: 'Literature review project created with Snowball.',
+                        role: 'Editor',
+                        icon: 'document.icns',
+                        isPackage: true,
+                    },
+                ],
+            },
+        },
+    },
 });
