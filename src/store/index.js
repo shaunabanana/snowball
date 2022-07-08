@@ -1,39 +1,11 @@
 /* eslint-disable object-curly-newline */
 import { createStore } from 'vuex';
 import { nanoid } from 'nanoid';
-import { writeProject, writePaper, writeSheet, writeIndex } from '@/utils/io';
 import { filter } from '@/utils/search';
 import { processTags, updateAutoTags } from '@/utils/tags';
 
-const filePersistence = (store) => {
-    const ignoreEvents = ['setLoading', 'setProjectPath', 'loadProject'];
-    // called when the store is initialized
-    store.subscribe((mutation, state) => {
-        if (ignoreEvents.includes(mutation.type)) return;
-        if (mutation.type === 'addPapers') {
-            console.log('[addPapers] Saving state to', state.projectPath);
-            writeProject(state);
-        } else if (mutation.type === 'updatePaper') {
-            console.log('[updatePaper]', JSON.stringify(mutation.payload));
-            let papers = mutation.payload.paper;
-            if (!Array.isArray(mutation.payload.paper)) papers = [mutation.payload.paper];
-            papers.forEach((paper) => writePaper(state, paper));
-        } else if (
-            mutation.type === 'addTag'
-            || mutation.type === 'deleteTag'
-            || mutation.type === 'updateTag'
-        ) {
-            console.log(`[${mutation.type}]`, JSON.stringify(mutation.payload));
-            writeIndex(state);
-        } else if (mutation.type === 'addSheet') {
-            console.log('[addSheet]', mutation.payload.id);
-            writeIndex(state);
-            writeSheet(state, mutation.payload.id);
-        } else {
-            console.log(`[${mutation.type}] ${JSON.stringify(mutation.payload)}`);
-        }
-    });
-};
+import filePersistence from '@/store/persistence';
+import historyTracking from '@/store/history';
 
 export default createStore({
     state: {
@@ -48,8 +20,11 @@ export default createStore({
         papers: {},
         tags: {},
 
-        created: null,
-        modified: null,
+        user: {
+            name: null,
+            email: null,
+            salt: null,
+        },
 
         loading: false,
 
@@ -131,6 +106,10 @@ export default createStore({
         },
     },
     mutations: {
+        setUser(state, user) {
+            state.user = user;
+        },
+
         setVersion(state, value) {
             state.version = value;
         },
@@ -158,8 +137,8 @@ export default createStore({
             state.loading = value;
         },
 
-        setProjectPath(state, path) {
-            state.projectPath = path;
+        setProjectPath(state, payload) {
+            state.projectPath = payload.path;
         },
 
         loadProject(state, data) {
@@ -171,7 +150,6 @@ export default createStore({
         },
 
         addPapers(state, payload) {
-            console.log(state.sheets[payload.sheet]);
             payload.papers.sort((a, b) => {
                 if (typeof a.year === 'number' && typeof b.year === 'number') {
                     return b.year - a.year;
@@ -195,11 +173,9 @@ export default createStore({
                 paper.comments = [];
                 paper.sheets = [];
 
-                console.log(paper.id, state.papers[paper.id]);
                 if (!state.papers[paper.id]) {
                     state.papers[paper.id] = paper;
                     if (!state.sheets[payload.sheet].papers.includes(paper.id)) {
-                        console.log(state.sheets[payload.sheet].papers, paper.id);
                         state.sheets[payload.sheet].papers.push(paper.id);
                     }
                     if (!paper.sheets.includes(payload.sheet)) {
@@ -207,7 +183,6 @@ export default createStore({
                     }
                 }
             });
-            console.log(state.sheets[payload.sheet]);
 
             updateAutoTags(state);
         },
@@ -259,5 +234,5 @@ export default createStore({
     },
     actions: {},
     modules: {},
-    plugins: [filePersistence],
+    plugins: [filePersistence, historyTracking],
 });

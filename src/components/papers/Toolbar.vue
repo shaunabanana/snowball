@@ -115,11 +115,6 @@ export default {
         },
 
         createFilterTag() {
-            console.log({
-                filter: this.filter,
-                method: this.method,
-                tagsOnly: false,
-            });
             this.showModal = true;
         },
     },

@@ -27,7 +27,8 @@ export default {
         },
 
         decisionRatio() {
-            return Math.ceil((this.decidedCount / this.totalCount) * 100);
+            const ratio = Math.ceil((this.decidedCount / this.totalCount) * 100);
+            return ratio || 0;
         },
     },
 };

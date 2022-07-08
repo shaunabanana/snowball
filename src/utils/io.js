@@ -37,23 +37,25 @@ export function writePaper(projectData, paperId) {
     });
 }
 
-export function writeProject(projectData) {
-    console.log(projectData);
-    if (existsSync(projectData.projectPath)) {
-        rmdirSync(projectData.projectPath, { recursive: true });
+export function writeProject(projectData, scrap) {
+    const sheetsPath = join(projectData.projectPath, 'sheets');
+    const papersPath = join(projectData.projectPath, 'papers');
+
+    if (scrap) {
+        if (existsSync(projectData.projectPath)) {
+            rmdirSync(projectData.projectPath, { recursive: true });
+        }
+        mkdirSync(projectData.projectPath);
+        mkdirSync(sheetsPath);
+        mkdirSync(papersPath);
     }
-    mkdirSync(projectData.projectPath);
 
     writeIndex(projectData);
 
-    const sheetsPath = join(projectData.projectPath, 'sheets');
-    mkdirSync(sheetsPath);
     Object.keys(projectData.sheets).forEach((key) => {
         writeSheet(projectData, key);
     });
 
-    const papersPath = join(projectData.projectPath, 'papers');
-    mkdirSync(papersPath);
     Object.keys(projectData.papers).forEach((key) => {
         writePaper(projectData, key);
     });
@@ -111,13 +113,11 @@ export function readProject(path) {
         };
         // Read index
         readIndex(path).then((indexData) => {
-            console.log(indexData);
             projectData.tags = indexData.tags;
 
             // Read sheets
             Promise.all(indexData.sheets.map((sheetInfo) => readSheet(path, sheetInfo.id)))
                 .then((sheetsData) => {
-                    console.log(sheetsData);
                     sheetsData.forEach((sheet) => {
                         projectData.sheets[sheet.id] = sheet;
                     });
@@ -125,7 +125,6 @@ export function readProject(path) {
                     // Read papers
                     Promise.all(indexData.papers.map((paperId) => readPaper(path, paperId))).then(
                         (papersData) => {
-                            console.log(papersData);
                             papersData.forEach((paper) => {
                                 projectData.papers[paper.id] = paper;
                             });

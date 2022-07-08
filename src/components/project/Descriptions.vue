@@ -10,7 +10,7 @@
             </a-typography-paragraph>
         </a-descriptions-item>
 
-        <!-- <a-descriptions-item label="Remote URL">
+        <a-descriptions-item label="Remote URL">
             <a-typography-paragraph style="margin-bottom: 0" ellipsis copyable>
                 <template #copy-icon><icon-link />Open</template>
                 <template #copy-tooltip>
@@ -18,14 +18,6 @@
                 </template>
                 https://github.com/shaunabanana/snowball.git
             </a-typography-paragraph>
-        </a-descriptions-item> -->
-
-        <a-descriptions-item label="Created">
-            Jun 17, 2022
-        </a-descriptions-item>
-
-        <a-descriptions-item label="Last Edited">
-            Jun 17, 2022
         </a-descriptions-item>
     </a-descriptions>
 </template>
@@ -33,5 +25,8 @@
 <script>
 export default {
     name: 'ProjectDescriptions',
+
+    computed: {
+    },
 };
 </script>

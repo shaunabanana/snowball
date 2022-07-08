@@ -32,14 +32,7 @@
                         :bordered="false"
                         style="width: 100%; height: 100%"
                     >
-                        <a-space wrap>
-                            <a-avatar>A</a-avatar>
-                            <a-avatar>B</a-avatar>
-                            <a-avatar>C</a-avatar>
-                            <a-avatar>D</a-avatar>
-                            <a-avatar>E</a-avatar>
-                            <a-avatar>F</a-avatar>
-                        </a-space>
+                        <Collaborators />
                     </a-card>
                 </a-col>
             </a-row>
@@ -108,12 +101,14 @@
 <script>
 import Statistics from './Statistics.vue';
 import Descriptions from './Descriptions.vue';
+import Collaborators from './Collaborators.vue';
 
 export default {
     name: 'ProjectScreen',
     components: {
         Statistics,
         Descriptions,
+        Collaborators,
     },
 
     // props: {

@@ -110,38 +110,6 @@
 
     <div style="padding: 0.5rem; padding-left: 1rem; margin-bottom: 10rem">
         <b>Comments</b>
-        <a-comment author="Shengchen" datetime="1 hour" align="right">
-            <template #actions>
-                <span class="action" key="heart">
-                    <span v-if="false">
-                        <IconHeartFill :style="{ color: '#f53f3f' }" />
-                    </span>
-                    <span v-else>
-                        <IconHeart />
-                    </span>
-                    83
-                </span>
-                <span class="action" key="star">
-                    <span v-if="false">
-                        <IconStarFill
-                            style="color: '#ffb400'"
-                        />
-                    </span>
-                    <span v-else>
-                        <IconStar />
-                    </span>
-                    3
-                </span>
-                <span class="action" key="reply"> <IconMessage /> Reply </span>
-            </template>
-            <template #content>
-                <div>
-                    A design is a plan or specification for the construction of an object or system
-                    or for the implementation of an activity or process, or the result of that plan
-                    or specification in the form of a prototype, product or process.
-                </div>
-            </template>
-        </a-comment>
     </div>
 </div>
 </template>

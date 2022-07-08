@@ -49,7 +49,6 @@ export default {
         textTags() {
             const textTags = [];
             this.tags.forEach((key) => {
-                console.log(key, this.$store.state.tags[key]);
                 if (this.$store.state.tags[key].type === 'text') {
                     textTags.push(this.$store.state.tags[key].id);
                 }
@@ -115,7 +114,6 @@ export default {
             const results = queryString
                 ? [...this.$store.state.tags].filter(this.createFilter(queryString))
                 : [...this.$store.state.tags];
-            console.log(results, this.$store.state.tags);
             // call callback function to return suggestions
             callback(results);
         },

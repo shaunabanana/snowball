@@ -38,7 +38,6 @@ export function processTags(state, paper) {
 }
 
 export function updateAutoTags(state) {
-    console.log('updateAutoTags', state);
     const papers = Object.keys(state.papers).map((paperId) => state.papers[paperId]);
     Object.keys(state.tags).forEach((tagId) => {
         const tag = state.tags[tagId];

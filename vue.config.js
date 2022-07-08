@@ -2,6 +2,11 @@ const { defineConfig } = require('@vue/cli-service');
 
 module.exports = defineConfig({
     transpileDependencies: true,
+    configureWebpack: {
+        experiments: {
+            topLevelAwait: true,
+        },
+    },
     pluginOptions: {
         electronBuilder: {
             externals: ['electron'],
@@ -15,7 +20,7 @@ module.exports = defineConfig({
                         description: 'Literature review project created with Snowball.',
                         role: 'Editor',
                         icon: 'document.icns',
-                        isPackage: true,
+                        // isPackage: true,
                     },
                 ],
             },

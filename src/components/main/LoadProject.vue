@@ -50,9 +50,12 @@ export default {
         newProject() {
             ipcRenderer.invoke('new-project').then((savePath) => {
                 if (!savePath) return;
-                console.log(savePath);
-                this.$store.commit('setProjectPath', savePath);
+                this.$store.commit('setProjectPath', {
+                    shouldInit: true,
+                    path: savePath,
+                });
                 this.visible = false;
+                this.$emit('done');
             });
             // save({ filters: [{ name: '', extensions: ["snowball"] }] }).then((savePath) => {
             //     if (!savePath) return;
@@ -64,15 +67,14 @@ export default {
         openProject() {
             ipcRenderer.invoke('open-project').then((openPath) => {
                 if (!openPath || openPath.length === 0) return;
-                console.log(openPath[0]);
-                this.$store.commit('setProjectPath', openPath[0]);
+                this.$store.commit('setProjectPath', { path: openPath[0] });
                 this.$store.commit('setLoading', true);
                 readProject(openPath[0]).then((projectData) => {
-                    console.log(projectData);
                     this.$store.commit('loadProject', projectData);
                     this.$store.commit('setLoading', false);
                     this.visible = false;
                 });
+                this.$emit('done');
             });
             // open({ filters: [{ name: '', extensions: ["snowball"] }] }).then(openPath => {
             //     if (!openPath) return;
@@ -90,7 +92,6 @@ export default {
 
     computed: {
         selectedKeys() {
-            console.log([this.item]);
             return [this.item];
         },
     },

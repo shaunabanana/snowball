@@ -25,8 +25,8 @@ ipcMain.handle('new-project', () => {
 
 ipcMain.handle('open-project', () => {
     const projectPath = dialog.showOpenDialogSync({
-        filters: [{ name: 'Snowball Project', extensions: ['snowball'] }],
-        properties: ['openFile', 'openDirectory'],
+        // filters: [{ name: 'Snowball Project', extensions: ['snowball'] }],
+        properties: ['openDirectory'],
     });
     return projectPath;
 });

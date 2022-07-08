@@ -58,14 +58,12 @@ export default {
 
     methods: {
         onClickMenuItem(key) {
-            console.log(key);
             this.$emit('update:item', key);
         },
     },
 
     computed: {
         selectedKeys() {
-            console.log([this.item]);
             return [this.item];
         },
     },
