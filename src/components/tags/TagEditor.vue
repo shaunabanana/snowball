@@ -87,12 +87,14 @@ export default {
                 if (!this.tags.includes(tagText)) {
                     const newTags = [...this.tags];
                     newTags.push(tagText);
-                    this.$store.commit('addTag', {
-                        id: tagText,
-                        type: 'text',
-                        color: 'blue',
-                        text: tagText,
-                    });
+                    if (!this.$store.state.tags[tagText]) {
+                        this.$store.commit('addTag', {
+                            id: tagText,
+                            type: 'text',
+                            color: 'blue',
+                            text: tagText,
+                        });
+                    }
                     this.$store.commit('updatePaper', {
                         paper: this.$store.state.activePaper.id,
                         updates: {

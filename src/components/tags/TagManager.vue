@@ -99,6 +99,7 @@ export default {
                             updates: {
                                 tags: newTags,
                             },
+                            preventCommit: true,
                         });
                     }
                 });

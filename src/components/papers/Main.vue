@@ -53,17 +53,14 @@ export default {
 
     methods: {
         addImportedPapers(papers) {
-            console.log(`Adding ${papers.length} new papers to sheet '${this.$store.state.activeSheet}'.`);
+            console.log(`[PapersScreen][addImportedPapers] Adding ${papers.length} new papers to sheet '${this.$store.state.activeSheet}'.`);
             this.$store.commit('addPapers', {
                 sheet: this.$store.state.activeSheet,
                 papers,
             });
-            console.log('Removing loading screen.');
-            this.$store.commit('setLoading', false);
         },
 
         snowball() {
-            console.log('Showing loading screen.');
             this.$store.commit('setLoading', true);
             const includedPapers = this.$store.getters.activeIncludedPapers;
 
@@ -77,13 +74,15 @@ export default {
                 });
                 const sheetId = `layer-${Object.keys(this.$store.state.sheets).length}`;
                 const sheetName = `Layer ${Object.keys(this.$store.state.sheets).length}`;
-                console.log(`Adding new sheet (${sheetId}) named '${sheetName}'.`);
-                this.$store.commit('addSheet', { id: sheetId, name: sheetName, papers: [] });
-                console.log(`Setting active sheet to '${sheetId}'.`);
+                console.log(`[PapersScreen][snowball] Adding new sheet (${sheetId}) named '${sheetName}'.`);
+                this.$store.commit('addSheet', {
+                    id: sheetId, name: sheetName, papers: [], preventCommit: true,
+                });
+                console.log(`[PapersScreen][snowball] Setting active sheet to '${sheetId}'.`);
                 this.$store.commit('setActiveSheet', sheetId);
                 this.addImportedPapers(newPapers);
 
-                console.info(`Snowballing finished for ${newPapers.length} papers.`);
+                console.info(`[PapersScreen][snowball] Snowballing finished for ${newPapers.length} papers.`);
             });
         },
     },

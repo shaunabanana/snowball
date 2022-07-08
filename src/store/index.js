@@ -1,6 +1,5 @@
 /* eslint-disable object-curly-newline */
 import { createStore } from 'vuex';
-import { nanoid } from 'nanoid';
 import { filter } from '@/utils/search';
 import { processTags, updateAutoTags } from '@/utils/tags';
 
@@ -201,12 +200,7 @@ export default createStore({
         },
 
         addTag(state, tag) {
-            let tagId = tag.id;
-            if (state.tags[tagId]) {
-                tagId += `-${nanoid()}`;
-            }
-            state.tags[tagId] = tag;
-            state.tags[tagId].id = tagId;
+            state.tags[tag.id] = tag;
             updateAutoTags(state);
         },
 
@@ -229,7 +223,11 @@ export default createStore({
         },
 
         addSheet(state, sheet) {
-            state.sheets[sheet.id] = sheet;
+            state.sheets[sheet.id] = {
+                id: sheet.id,
+                name: sheet.name,
+                papers: sheet.papers,
+            };
         },
     },
     actions: {},

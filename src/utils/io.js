@@ -135,7 +135,7 @@ export function readProject(path) {
                     );
                 })
                 .catch((errors) => {
-                    console.log('Error when reading sheets', errors);
+                    console.log('[IO][readProject] Error when reading sheets', errors);
                 });
         });
     });

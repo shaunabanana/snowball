@@ -8,6 +8,7 @@
 </template>
 
 <script>
+import { nextTick } from 'vue';
 import { processFile } from '@/utils/import';
 
 export default {
@@ -16,8 +17,11 @@ export default {
     methods: {
         loadFile(files) {
             if (files.length === 0) return;
-            processFile(files[0].file).then((processed) => {
-                this.$emit('import', processed);
+            this.$store.commit('setLoading', true);
+            nextTick(() => {
+                processFile(files[0].file).then((processed) => {
+                    this.$emit('import', processed);
+                });
             });
         },
     },

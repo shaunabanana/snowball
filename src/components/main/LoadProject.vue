@@ -31,7 +31,6 @@
 <script>
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { ipcRenderer } from 'electron';
-import { readProject } from '@/utils/io';
 
 export default {
     name: 'LoadProject',
@@ -68,12 +67,7 @@ export default {
             ipcRenderer.invoke('open-project').then((openPath) => {
                 if (!openPath || openPath.length === 0) return;
                 this.$store.commit('setProjectPath', { path: openPath[0] });
-                this.$store.commit('setLoading', true);
-                readProject(openPath[0]).then((projectData) => {
-                    this.$store.commit('loadProject', projectData);
-                    this.$store.commit('setLoading', false);
-                    this.visible = false;
-                });
+                this.visible = false;
                 this.$emit('done');
             });
             // open({ filters: [{ name: '', extensions: ["snowball"] }] }).then(openPath => {

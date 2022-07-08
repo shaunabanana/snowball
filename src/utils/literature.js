@@ -24,7 +24,7 @@ export default function querySemanticScholar(doi) {
 
     return new Promise((resolve) => {
         axios.get(`https://api.semanticscholar.org/graph/v1/paper/${doi}/references?fields=title,url,abstract,authors,year,externalIds,venue,journal&limit=1000`).then((refResponse) => {
-            console.log('Got response for references', refResponse.data.data);
+            console.log('[Literature][querySemanticScholar] Got response for references', refResponse.data.data);
             refResponse.data.data.forEach((paper) => {
                 if (paper.citedPaper.paperId) {
                     references.push(formatSemanticScholarPaper(paper.citedPaper));
@@ -32,7 +32,7 @@ export default function querySemanticScholar(doi) {
             });
 
             axios.get(`https://api.semanticscholar.org/graph/v1/paper/${doi}/citations?fields=title,url,abstract,authors,year,externalIds,venue,journal&limit=1000`).then((citeResponse) => {
-                console.log('Got response for citations', citeResponse.data.data);
+                console.log('[Literature][querySemanticScholar] Got response for citations', citeResponse.data.data);
                 citeResponse.data.data.forEach((paper) => {
                     if (paper.citingPaper.paperId) {
                         citations.push(formatSemanticScholarPaper(paper.citingPaper));
@@ -50,7 +50,7 @@ export default function querySemanticScholar(doi) {
             });
         }).catch(() => {
             axios.get(`https://api.semanticscholar.org/graph/v1/paper/${doi}/citations?fields=title,url,abstract,authors,year,externalIds,venue,journal&limit=1000`).then((citeResponse) => {
-                console.log('Got response for citations', citeResponse.data.data);
+                console.log('[Literature][querySemanticScholar] Got response for citations', citeResponse.data.data);
                 citeResponse.data.data.forEach((paper) => {
                     if (paper.citingPaper.paperId) {
                         citations.push(formatSemanticScholarPaper(paper.citingPaper));
