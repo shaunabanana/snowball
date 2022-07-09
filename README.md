@@ -11,13 +11,12 @@
     <br />
     <br />
     <b>Download for </b>
-    <a href="https://github.com/shaunabanana/snowball/releases/download/v0.1.0/Snowball_0.1.0_universal.dmg">macOS</a>
+    <a href="https://github.com/shaunabanana/snowball/releases/download/v1.0.0/snowball-1.0.0-universal-mac.zip">macOS</a>
     ·
-    Windows
+    <a href="https://github.com/shaunabanana/snowball/releases/download/v1.0.0/snowball.Setup.1.0.0.exe">Windows</a>
     ·
-    Linux
+    <a href="https://github.com/shaunabanana/snowball/releases/tag/v1.0.0">Linux</a>
     <br />
-    <i>~ Links will be added once a release is available. ~</i>
   </p>
 </p>
 Snowball lets you quickly find and filter through papers using the snowballing method. Start with a core collection of papers, and find more by going through their citations and references.
@@ -27,7 +26,7 @@ Snowball lets you quickly find and filter through papers using the snowballing m
 ## How to use
 
 1. Start with a collection of papers. You can use a search engine like Web of Science or a reference manager like Zotero.
-2. Export your "core" collection into a BibTeX file. Import it into Snowball.
+2. Export your "core" collection into a BibTeX/RIS/... file. Import it into Snowball.
 3. Review the papers according to you inclusion criteria. Assign tags and write notes as necessary.
 4. Once you've decided on a paper, tick/untick the switch for inclusion/exclusion.
 5. After going through the list, click "Snowball from included papers" to find all citations and references of the included papers.
