@@ -29,9 +29,6 @@ export default {
     name: 'TagEditor',
     components: { Tag },
     props: {
-        tags: {
-            type: Array,
-        },
         editable: {
             type: Boolean,
             default: true,
@@ -48,7 +45,8 @@ export default {
     computed: {
         textTags() {
             const textTags = [];
-            this.tags.forEach((key) => {
+            if (!this.$store.state.activePaper) return [];
+            this.$store.state.activePaper.tags.forEach((key) => {
                 if (this.$store.state.tags[key].type === 'text') {
                     textTags.push(this.$store.state.tags[key].id);
                 }
@@ -69,14 +67,12 @@ export default {
     },
 
     methods: {
-
         handleClose(tagText) {
-            const newTags = [...this.tags];
-            newTags.splice(newTags.indexOf(tagText), 1);
+            const newTags = [...this.$store.state.activePaper.tags];
             this.$store.commit('updatePaper', {
                 paper: this.$store.state.activePaper.id,
                 updates: {
-                    tags: newTags,
+                    tags: newTags.filter((tagId) => tagId !== tagText),
                 },
             });
             // this.$emit("update:modelValue", newValue);
@@ -84,8 +80,8 @@ export default {
 
         addTag(tagText) {
             if (tagText.length > 0) {
-                if (!this.tags.includes(tagText)) {
-                    const newTags = [...this.tags];
+                if (!this.$store.state.activePaper.tags.includes(tagText)) {
+                    const newTags = [...this.$store.state.activePaper.tags];
                     newTags.push(tagText);
                     if (!this.$store.state.tags[tagText]) {
                         this.$store.commit('addTag', {

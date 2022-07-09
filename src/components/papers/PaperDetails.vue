@@ -16,7 +16,7 @@
         :column="1"
     >
         <a-descriptions-item>
-            <TagEditor :tags="$store.state.activePaper.tags"/>
+            <TagEditor />
         </a-descriptions-item>
 
         <a-descriptions-item label="Authors">
@@ -106,11 +106,18 @@
         >
             {{$store.state.activePaper.record['journal'].name}}
         </a-descriptions-item>
-    </a-descriptions>
 
-    <div style="padding: 0.5rem; padding-left: 1rem; margin-bottom: 10rem">
-        <b>Comments</b>
-    </div>
+        <a-descriptions-item label="Notes">
+            <a-textarea :auto-size="{minRows: 4}"
+                placeholder="What are your thoughts?"
+                v-model="$store.state.activePaper.notes"
+                @change="$store.commit('updatePaper', {
+                    paper: $store.state.activePaper.id,
+                    updates: { notes: $event },
+                })"
+            />
+        </a-descriptions-item>
+    </a-descriptions>
 </div>
 </template>
 

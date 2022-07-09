@@ -6,7 +6,7 @@
             <ConfigIdentity :visible="showIdentity" @confirm="showIdentity = false"/>
             <LoadingWait :visible="$store.state.loading"/>
             <ProjectScreen v-if="$store.state.projectPath && currentScreen === 'project'" />
-            <PapersScreen v-if="$store.state.projectPath && currentScreen === 'screening'" />
+            <PapersScreen v-if="$store.state.projectPath && currentScreen === 'screen'" />
         </a-layout>
     </a-config-provider>
 </template>

@@ -1,8 +1,11 @@
 import git from 'isomorphic-git';
-import { writeProject, readProject } from '@/utils/io';
 import { join } from 'path';
 import sanitize from 'sanitize-basename';
 import AwaitLock from 'await-lock';
+import sequmise from 'sequmise';
+
+import { readProject } from '@/utils/io';
+import globalLock from '@/store/lock';
 
 const globby = require('globby');
 
@@ -47,21 +50,23 @@ async function commitFiles(lock, state, options) {
 }
 
 async function commitFile(lock, state, file, options) {
-    async function commitAfterChange() {
-        await lock.acquireAsync();
-        try {
-            const files = Array.isArray(file) ? file : [file];
-            files.some(async (filePath) => {
-                const status = await git.status({
-                    fs, dir: state.projectPath, filepath: filePath,
-                });
-                if (status === 'unmodified') {
-                    console.log('[History][commitFile] File is unmodified, trying again in 100ms');
-                    setTimeout(commitAfterChange, 100);
-                    return true;
-                }
-                return false;
+    // async function commitAfterChange() {
+    await lock.acquireAsync();
+    try {
+        const files = Array.isArray(file) ? file : [file];
+        let shouldCommit = true;
+        await sequmise(files.map((filePath) => async () => {
+            const status = await git.status({
+                fs, dir: state.projectPath, filepath: filePath,
             });
+            if (status === 'unmodified') {
+                console.log('[History][commitFile] File is unmodified, abort.');
+                // setTimeout(commitAfterChange, 100);
+                shouldCommit = false;
+            }
+        }));
+        console.log(shouldCommit);
+        if (shouldCommit) {
             await git.add({
                 fs, dir: state.projectPath, filepath: file,
             });
@@ -70,24 +75,13 @@ async function commitFile(lock, state, file, options) {
                 dir: state.projectPath,
                 ...options,
             });
-        } finally {
-            lock.release();
+            console.log('[History][commitFile] Committed.');
         }
-    }
-    commitAfterChange();
-}
-
-async function gatherHistory(lock, state) {
-    await lock.acquireAsync();
-    try {
-        const commits = await git.log({
-            fs,
-            dir: state.projectPath,
-        });
-        console.log(commits);
     } finally {
         lock.release();
     }
+    // }
+    // commitAfterChange();
 }
 
 async function handlePaperUpdate(lock, state, mutation) {
@@ -100,9 +94,9 @@ async function handlePaperUpdate(lock, state, mutation) {
             undecided: 'Un-decide',
         }[mutation.payload.updates.decision];
     } else if (mutation.payload.updates.tags) {
-        heading = 'Tag';
-    } else if (mutation.payload.updates.comments) {
-        heading = 'Comment on';
+        heading = 'Update tags for';
+    } else if (mutation.payload.updates.notes) {
+        heading = 'Take notes on';
     } else {
         heading = 'Update';
     }
@@ -123,6 +117,38 @@ async function handlePaperUpdate(lock, state, mutation) {
     } else {
         file = join('papers', `${sanitize(mutation.payload.paper)}.yaml`);
     }
+    await commitFile(lock, state, file, {
+        author: state.user,
+        message: `${heading} ${title}`,
+    });
+}
+
+async function handleSheetUpdate(lock, state, mutation) {
+    // Choose verb based on mutation type.
+    let heading;
+    if (mutation.payload.updates.name) {
+        heading = 'Rename';
+    } else {
+        heading = 'Update';
+    }
+
+    // Choose method to describe paper based on number on papers involved.
+    let title;
+    if (Array.isArray(mutation.payload.sheet)) {
+        title = `${mutation.payload.sheet.length} sheets`;
+    } else {
+        const sheet = state.sheets[mutation.payload.sheet];
+        title = sheet.name.slice(0, 40) + (sheet.name.length > 40 ? '...\n' : '\n');
+        title = `sheet "${title}"`;
+    }
+
+    let file;
+    if (Array.isArray(mutation.payload.sheet)) {
+        file = mutation.payload.sheet.map((sheetId) => join('sheets', `${sanitize(sheetId)}.yaml`));
+    } else {
+        file = [join('sheets', `${sanitize(mutation.payload.sheet)}.yaml`)];
+    }
+    file.push('index.yaml');
     await commitFile(lock, state, file, {
         author: state.user,
         message: `${heading} ${title}`,
@@ -153,72 +179,92 @@ export default function historyTracking(store) {
     const lock = new AwaitLock();
     // called when the store is initialized
     store.subscribe(async (mutation, state) => {
-        if (ignoreEvents.includes(mutation.type)) return;
+        await globalLock.acquireAsync();
+        console.log('[History][Lock] Acquired lock.');
+        try {
+            if (ignoreEvents.includes(mutation.type)) return;
+            console.log(`[History][${mutation.type}] Entry.`, mutation.payload);
 
-        if (mutation.type === 'setProjectPath') {
-            if (mutation.payload.shouldInit) {
-                console.log('[History][setProjectPath] shouldInit is set to true.');
-                writeProject(state, true);
-                await git.init({ fs, dir: state.projectPath, defaultBranch: 'main' });
-                console.log('[History][setProjectPath] Initialized empty git repository.');
-                await commitFiles(lock, state, {
-                    author: {
-                        name: 'Snowball',
-                    },
-                    message: 'Create empty project.',
-                });
-            }
-            await gatherHistory(lock, state);
-        } else if (mutation.type === 'setUser') {
-            const branches = await git.listBranches({ fs, dir: state.projectPath });
-            // If there is more than one branch, this project already has some progress.
-            if (branches.length > 1) {
-                store.commit('setLoading', true);
-                await switchToUserBranch(lock, state);
-                // reload project here
-                readProject(state.projectPath).then((projectData) => {
-                    store.commit('loadProject', projectData);
-                    store.commit('setLoading', false);
-                });
-            }
-        } else if (mutation.type === 'addPapers') {
-            await commitFiles(lock, state, {
-                author: state.user,
-                message: 'Add papers',
-            });
-            const branches = await git.listBranches({ fs, dir: state.projectPath });
-            // If there is only a main branch, this project just started.
-            if (branches.length === 1) {
-                console.log('[History][addPapers] Papers added to main branch. Now creating & switching to user branch.');
-                await switchToUserBranch(lock, state);
-            }
-            store.commit('setLoading', false);
-        } else if (mutation.type === 'addSheet') {
-            if (!mutation.payload.preventCommit) {
+            if (mutation.type === 'setProjectPath') {
+                if (mutation.payload.shouldInit) {
+                    console.log('[History][setProjectPath] shouldInit is set to true.');
+                    await git.init({ fs, dir: state.projectPath, defaultBranch: 'main' });
+                    console.log('[History][setProjectPath] Initialized empty git repository.');
+                    await commitFiles(lock, state, {
+                        author: {
+                            name: 'Snowball',
+                        },
+                        message: 'Create empty project.',
+                    });
+                }
+            } else if (mutation.type === 'setUser') {
+                const branches = await git.listBranches({ fs, dir: state.projectPath });
+                // If there is more than one branch, this project already has some progress.
+                if (branches.length > 1) {
+                    store.commit('setLoading', true);
+                    await switchToUserBranch(lock, state);
+                    // reload project here
+                    console.log('[History][setUser] Reloading project after switching branch.');
+                    readProject(state.projectPath).then((projectData) => {
+                        store.commit('loadProject', projectData);
+                        store.commit('setLoading', false);
+                    });
+                }
+            } else if (mutation.type === 'addPapers') {
                 await commitFiles(lock, state, {
                     author: state.user,
-                    message: `Add new sheet "${mutation.payload.name}"`,
+                    message: 'Add papers',
+                });
+                const branches = await git.listBranches({ fs, dir: state.projectPath });
+                // If there is only a main branch, this project just started.
+                if (branches.length === 1) {
+                    console.log('[History][addPapers] Papers added to main branch. Now creating & switching to user branch.');
+                    await switchToUserBranch(lock, state);
+                }
+                store.commit('setLoading', false);
+            } else if (mutation.type === 'updatePaper') {
+                if (!mutation.payload.preventCommit) {
+                    await handlePaperUpdate(lock, state, mutation);
+                }
+            } else if (mutation.type === 'addTag') {
+                const tag = state.tags[mutation.payload.id];
+                await commitFile(lock, state, 'index.yaml', {
+                    author: state.user,
+                    message: `Define new tag "${tag.text}"`,
+                });
+            } else if (mutation.type === 'updateTag') {
+                const tag = state.tags[mutation.payload.tag];
+                await commitFile(lock, state, 'index.yaml', {
+                    author: state.user,
+                    message: `Update tag "${tag.text}"`,
+                });
+            } else if (mutation.type === 'deleteTag') {
+                const tag = state.tags[mutation.payload.id];
+                await commitFiles(lock, state, {
+                    author: state.user,
+                    message: `Delete tag "${tag.text}"`,
+                });
+            } else if (mutation.type === 'addSheet') {
+                if (!mutation.payload.preventCommit) {
+                    await commitFiles(lock, state, {
+                        author: state.user,
+                        message: `Add new sheet "${mutation.payload.name}"`,
+                    });
+                }
+            } else if (mutation.type === 'updateSheet') {
+                if (!mutation.payload.preventCommit) {
+                    await handleSheetUpdate(lock, state, mutation);
+                }
+            } else if (mutation.type === 'deleteSheet') {
+                const sheet = state.sheets[mutation.payload];
+                await commitFiles(lock, state, {
+                    author: state.user,
+                    message: `Delete sheet "${sheet.name}"`,
                 });
             }
-        } else if (mutation.type === 'updatePaper') {
-            if (!mutation.payload.preventCommit) {
-                await handlePaperUpdate(lock, state, mutation);
-            }
-        } else if (mutation.type === 'addTag') {
-            await commitFile(lock, state, 'index.yaml', {
-                author: state.user,
-                message: `Define new tag "${mutation.payload.id}"`,
-            });
-        } else if (mutation.type === 'deleteTag') {
-            await commitFiles(lock, state, {
-                author: state.user,
-                message: `Delete tag "${mutation.payload.id}"`,
-            });
-        } else if (mutation.type === 'updateTag') {
-            await commitFile(lock, state, 'index.yaml', {
-                author: state.user,
-                message: `Update tag "${mutation.payload.tag}"`,
-            });
+        } finally {
+            globalLock.release();
+            console.log('[History][Lock] Released lock.');
         }
     });
 }

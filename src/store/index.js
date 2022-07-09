@@ -1,13 +1,17 @@
 /* eslint-disable object-curly-newline */
 import { createStore } from 'vuex';
+// import { compare } from 'compare-versions';
+
 import { filter } from '@/utils/search';
 import { processTags, updateAutoTags } from '@/utils/tags';
+// import convertFromOlderVersion from '@/utils/compatibility';
 
 import filePersistence from '@/store/persistence';
-import historyTracking from '@/store/history';
+// import historyTracking from '@/store/history';
 
 export default createStore({
     state: {
+        version: null,
         projectPath: '',
         sheets: {
             core: {
@@ -39,12 +43,24 @@ export default createStore({
     },
     getters: {
         currentSheet(state) {
+            if (!state.activeSheet) {
+                return {
+                    id: 'all',
+                    name: 'All',
+                    papers: Object.keys(state.papers),
+                };
+            }
             return state.sheets[state.activeSheet];
         },
 
         currentPapers(state) {
-            const currentSheet = state.sheets[state.activeSheet];
-            const currentPapers = currentSheet.papers.map((id) => state.papers[id]);
+            let currentPapers;
+            if (state.activeSheet) {
+                const currentSheet = state.sheets[state.activeSheet];
+                currentPapers = currentSheet.papers.map((id) => state.papers[id]);
+            } else {
+                currentPapers = Object.keys(state.papers).map((id) => state.papers[id]);
+            }
 
             if (state.filter.length === 0) return currentPapers;
             if (!state.filterChanged) return state.filterResult;
@@ -126,6 +142,8 @@ export default createStore({
 
         setActiveSheet(state, value) {
             state.activeSheet = value;
+            state.selection = [];
+            state.filterChanged = true;
         },
 
         setActivePaper(state, paperId) {
@@ -169,7 +187,7 @@ export default createStore({
                 paper.include = false;
                 paper.decision = 'undecided';
                 paper.notes = '';
-                paper.comments = [];
+                // paper.comments = [];
                 paper.sheets = [];
 
                 if (!state.papers[paper.id]) {
@@ -196,7 +214,12 @@ export default createStore({
                 Object.entries(payload.updates).forEach(([key, value]) => {
                     state.papers[paper][key] = value;
                 });
+                console.log(state.papers[paper].tags);
             });
+        },
+
+        deletePaper(state, paperId) {
+            delete state.papers[paperId];
         },
 
         addTag(state, tag) {
@@ -229,8 +252,28 @@ export default createStore({
                 papers: sheet.papers,
             };
         },
+
+        updateSheet(state, payload) {
+            let sheets = payload.sheet;
+            if (!Array.isArray(payload.sheet)) {
+                sheets = [payload.sheet];
+            }
+            sheets.forEach((sheet) => {
+                if (!state.sheets[sheet]) return;
+                Object.entries(payload.updates).forEach(([key, value]) => {
+                    state.sheets[sheet][key] = value;
+                });
+            });
+        },
+
+        deleteSheet(state, sheet) {
+            delete state.sheets[sheet];
+        },
     },
     actions: {},
     modules: {},
-    plugins: [filePersistence, historyTracking],
+    plugins: [
+        filePersistence,
+        // historyTracking
+    ],
 });

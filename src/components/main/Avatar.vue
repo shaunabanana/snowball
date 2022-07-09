@@ -1,5 +1,5 @@
 <template>
-    <a-tooltip :content="tooltip" :disabled="tooltip.length === 0">
+    <a-tooltip :content="tooltip" :disabled="tooltip.length === 0" position="bottom">
         <a-avatar :size="size" :auto-fix-font-size="false"
             :style="{ cursor: 'pointer' }"
         >

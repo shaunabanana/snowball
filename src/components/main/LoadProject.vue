@@ -25,12 +25,25 @@
                 </a-card>
             </a-col>
         </a-row>
+
+        <a-modal v-model:visible="askUpgrade" okText="Continue"
+            @ok="convertAndLoad" @cancel="askUpgrade = false"
+        >
+            <template #title>
+                Older Snowball Project
+            </template>
+            This is a project created with an older version (0.1.X) of Snowball.
+            Opening it will upgrade its contents, and make it imcompatible with older versions.
+            Would you like to continue?
+        </a-modal>
     </a-modal>
 </template>
 
 <script>
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { ipcRenderer } from 'electron';
+import { readProject, writeProject } from '@/utils/io';
+import convertFromOlderVersion from '@/utils/compatibility';
 
 export default {
     name: 'LoadProject',
@@ -42,6 +55,8 @@ export default {
     data() {
         return {
             visible: true,
+            askUpgrade: false,
+            toConvert: null,
         };
     },
 
@@ -66,21 +81,32 @@ export default {
         openProject() {
             ipcRenderer.invoke('open-project').then((openPath) => {
                 if (!openPath || openPath.length === 0) return;
-                this.$store.commit('setProjectPath', { path: openPath[0] });
+                readProject(openPath[0]).then((projectData) => {
+                    console.log(`[LoadProject][openProject] Project data version: ${projectData.version}`);
+                    if (!projectData.version) {
+                        console.log('[LoadProject][openProject] The project file is created with an older version of Snowball. Asking for confirmation.');
+                        this.toConvert = projectData;
+                        this.askUpgrade = true;
+                    } else {
+                        this.$store.commit('setProjectPath', { path: openPath[0] });
+                        this.$store.commit('loadProject', projectData);
+                        this.$store.commit('setLoading', false);
+                        this.visible = false;
+                        this.$emit('done');
+                    }
+                });
+            });
+        },
+
+        convertAndLoad() {
+            const converted = convertFromOlderVersion(this.$store.state, this.toConvert);
+            this.$store.commit('setProjectPath', { path: converted.projectPath });
+            this.$store.commit('loadProject', converted);
+            writeProject(this.$store.state).then(() => {
+                this.$store.commit('setLoading', false);
                 this.visible = false;
                 this.$emit('done');
             });
-            // open({ filters: [{ name: '', extensions: ["snowball"] }] }).then(openPath => {
-            //     if (!openPath) return;
-            //     this.$store.commit('setProjectPath', openPath);
-            //     this.$emit("update:modelValue", openPath);
-            //     this.$store.commit('setLoading', true);
-            //     readProject(openPath).then(projectData => {
-            //         console.log(projectData);
-            //         this.$store.commit('loadProject', projectData);
-            //         this.$store.commit('setLoading', false);
-            //     })
-            // });
         },
     },
 

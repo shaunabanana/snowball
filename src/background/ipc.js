@@ -13,6 +13,10 @@ ipcMain.on('open-link', (event, link) => {
     shell.openExternal(link);
 });
 
+ipcMain.on('show-file', (event, file) => {
+    shell.showItemInFolder(file);
+});
+
 ipcMain.handle('get-version', () => app.getVersion());
 
 ipcMain.handle('new-project', () => {
@@ -29,4 +33,12 @@ ipcMain.handle('open-project', () => {
         properties: ['openDirectory'],
     });
     return projectPath;
+});
+
+ipcMain.handle('export', (event, format) => {
+    const filePath = dialog.showSaveDialogSync({
+        filters: [{ name: 'Export file', extensions: [format] }],
+        properties: ['createDirectory', 'showOverwriteConfirmation'],
+    });
+    return filePath;
 });

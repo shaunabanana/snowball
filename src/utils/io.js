@@ -1,13 +1,14 @@
 /* eslint-disable import/no-extraneous-dependencies */
 import { join } from 'path';
 import { mkdirSync, rmdirSync, existsSync } from 'fs';
-import { readFile, writeFile } from 'fs/promises';
+import { readFile, writeFile, unlink } from 'fs/promises';
 import { stringify, parse } from 'yaml';
 import sanitize from 'sanitize-basename';
+import sequmise from 'sequmise';
 
 const FORMAT = '.yaml';
 
-export function writeIndex(projectData) {
+export async function writeIndex(projectData) {
     const indexPath = join(projectData.projectPath, `index${FORMAT}`);
     const indexData = {
         version: projectData.version,
@@ -18,26 +19,36 @@ export function writeIndex(projectData) {
         papers: Object.keys(projectData.papers),
         tags: { ...projectData.tags },
     };
-    writeFile(indexPath, stringify(indexData), {
+    await writeFile(indexPath, stringify(indexData), {
         encoding: 'utf8',
     });
 }
 
-export function writeSheet(projectData, sheetId) {
+export async function writeSheet(projectData, sheetId) {
     const sheetPath = join(projectData.projectPath, 'sheets', sanitize(sheetId) + FORMAT);
-    writeFile(sheetPath, stringify(projectData.sheets[sheetId]), {
+    await writeFile(sheetPath, stringify(projectData.sheets[sheetId]), {
         encoding: 'utf8',
     });
 }
 
-export function writePaper(projectData, paperId) {
+export async function writePaper(projectData, paperId) {
     const paperPath = join(projectData.projectPath, 'papers', sanitize(paperId) + FORMAT);
-    writeFile(paperPath, stringify(projectData.papers[paperId]), {
+    await writeFile(paperPath, stringify(projectData.papers[paperId]), {
         encoding: 'utf8',
     });
 }
 
-export function writeProject(projectData, scrap) {
+export async function deleteSheet(projectData, sheetId) {
+    const sheetPath = join(projectData.projectPath, 'sheets', sanitize(sheetId) + FORMAT);
+    await unlink(sheetPath, { encoding: 'utf8' });
+}
+
+export async function deletePaper(projectData, paperId) {
+    const paperPath = join(projectData.projectPath, 'papers', sanitize(paperId) + FORMAT);
+    await unlink(paperPath, { encoding: 'utf8' });
+}
+
+export async function writeProject(projectData, scrap) {
     const sheetsPath = join(projectData.projectPath, 'sheets');
     const papersPath = join(projectData.projectPath, 'papers');
 
@@ -50,15 +61,15 @@ export function writeProject(projectData, scrap) {
         mkdirSync(papersPath);
     }
 
-    writeIndex(projectData);
+    await writeIndex(projectData);
 
-    Object.keys(projectData.sheets).forEach((key) => {
-        writeSheet(projectData, key);
-    });
+    await sequmise(Object.keys(projectData.sheets).map((key) => async () => {
+        await writeSheet(projectData, key);
+    }));
 
-    Object.keys(projectData.papers).forEach((key) => {
-        writePaper(projectData, key);
-    });
+    await sequmise(Object.keys(projectData.papers).map((key) => async () => {
+        await writePaper(projectData, key);
+    }));
 }
 
 export function readIndex(path) {
@@ -106,6 +117,7 @@ export function readPaper(path, paperId) {
 export function readProject(path) {
     return new Promise((resolve) => {
         const projectData = {
+            version: undefined,
             projectPath: path,
             sheets: {},
             papers: {},
@@ -113,6 +125,7 @@ export function readProject(path) {
         };
         // Read index
         readIndex(path).then((indexData) => {
+            projectData.version = indexData.version;
             projectData.tags = indexData.tags;
 
             // Read sheets

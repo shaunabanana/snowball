@@ -16,15 +16,29 @@
             @menu-item-click="onClickMenuItem"
         >
             <a-menu-item key="project">
-                <IconHome></IconHome>
+                <icon-home />
                 Project
             </a-menu-item>
-            <a-menu-item key="screening">
-                <IconFile></IconFile>
-                Screening
+            <a-menu-item key="screen">
+                <icon-scan />
+                Screen
             </a-menu-item>
+            <!-- <a-tooltip content="Functionality coming soon!" position="right">
+                <a-menu-item key="compare" disabled>
+                    <icon-mind-mapping />
+                    Compare
+                </a-menu-item>
+            </a-tooltip>
+
+            <a-tooltip content="Functionality coming soon!" position="right">
+            <a-menu-item key="results" disabled>
+                <icon-file />
+                Results
+            </a-menu-item>
+            </a-tooltip> -->
+
             <a-menu-item key="settings">
-                <IconSettings></IconSettings>
+                <icon-settings />
                 Settings
             </a-menu-item>
         </a-menu>
@@ -33,15 +47,10 @@
 
 <script>
 import { ref } from 'vue';
-import { IconHome, IconFile, IconSettings } from '@arco-design/web-vue/es/icon';
 
 export default {
     name: 'MainMenu',
-    components: {
-        IconHome,
-        IconFile,
-        IconSettings,
-    },
+    components: { },
 
     props: {
         item: {

@@ -37,6 +37,18 @@
                 </a-col>
             </a-row>
             <a-row :gutter="12" :wrap="false" style="flex-grow: 2; align-items: stretch">
+                <a-card
+                    title="Review history"
+                    :bordered="false"
+                    style="width: 100%; height: 100%"
+                >
+                    <template #extra>
+                        <a-link>Fullscreen</a-link>
+                    </template>
+                    Visualization coming soon!
+                </a-card>
+            </a-row>
+            <!-- <a-row :gutter="12" :wrap="false" style="flex-grow: 2; align-items: stretch">
                 <a-col :span="16">
                     <a-card
                         title="Review history"
@@ -93,7 +105,7 @@
                         </a-list>
                     </a-card>
                 </a-col>
-            </a-row>
+            </a-row> -->
         </a-layout>
     </a-layout>
 </template>

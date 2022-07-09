@@ -16,6 +16,13 @@ export function processTags(state, paper) {
             text: 'Excluded',
         });
     }
+    if (paper.decision === 'undecided') {
+        builtinTags.push({
+            type: 'builtin',
+            color: 'gray',
+            text: 'Undecided',
+        });
+    }
     if (!paper.doi) {
         builtinTags.push({
             type: 'builtin',

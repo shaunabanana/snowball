@@ -15,9 +15,10 @@ export function formatAuthors(authors) {
     return '';
 }
 
-function processBibTex(fileContent) {
-    const preprocessed = fileContent.replace(/([^\\])\$/g, '$1\\$');
-    const bib = Cite(preprocessed);
+function processCitationJs(fileContent, preprocess) {
+    let toLoad = fileContent;
+    if (preprocess) toLoad = fileContent.replace(/([^\\])\$/g, '$1\\$');
+    const bib = Cite(toLoad);
     return bib.data.map((record) => {
         const originalRecord = { ...record };
         // eslint-disable-next-line no-underscore-dangle
@@ -40,14 +41,18 @@ export function processFile(file) {
     const reader = new FileReader();
 
     return new Promise((resolve, reject) => {
-        if (file.name.endsWith('.bib')) {
-            reader.addEventListener('load', (event) => {
-                resolve(processBibTex(event.target.result));
-            });
-            reader.readAsText(file);
-        } else {
-            reject(new Error('Currently Snowball only supports BibTeX files.'));
-        }
+        reader.addEventListener('load', (event) => {
+            try {
+                const result = processCitationJs(
+                    event.target.result,
+                    file.name.endsWith('.bib'),
+                );
+                resolve(result);
+            } catch (error) {
+                reject(error);
+            }
+        });
+        reader.readAsText(file);
     });
     // else if (file.name.endsWith(".xls") || file.name.endsWith(".xlsx")) {
     //     readXlsxFile(files[0]).then((rows) => {

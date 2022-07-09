@@ -5,6 +5,21 @@
                 <a-button type="primary" :disabled="canSnowball" @click="$emit('snowball')">
                     Snowball »
                 </a-button>
+                <a-dropdown v-if="$store.state.selection.length === 0"
+                    position="br"
+                    @select="$emit('export', $event)"
+                >
+                    <a-button>Export Sheet <icon-down/></a-button>
+                    <template #content>
+                        <a-dgroup title="Reference Managers">
+                            <a-doption value="RIS">RIS (Recommended)</a-doption>
+                            <a-doption value="BibTeX">BibTeX</a-doption>
+                        </a-dgroup>
+                        <a-dgroup title="Human-readable">
+                            <a-doption value="CSV">CSV</a-doption>
+                        </a-dgroup>
+                    </template>
+                </a-dropdown>
                 <a-button-group v-if="$store.state.selection.length > 1">
                     <a-button @click="$store.commit('updatePaper', {
                         paper: $store.state.selection,
@@ -35,7 +50,9 @@
                     </a-button>
                 </a-button-group>
 
-                <a-button v-if="$store.state.selection.length > 0">
+                <a-button v-if="$store.state.selection.length > 0"
+                    @click="newSheetFromSelected"
+                >
                     <template #icon>
                         <icon-plus />
                     </template>
@@ -65,7 +82,7 @@
                     </template>
                     <template #suffix>
                         <span v-if="$store.state.filter.length > 0">
-                            {{filteredCount}} filtered.
+                            {{this.$store.getters.currentPapers.length}} filtered.
                             <a-button size="mini" type="text" @click="createFilterTag">
                                 Save as tag...
                             </a-button>
@@ -88,7 +105,7 @@ export default {
         Tutorial,
         TagModal,
     },
-    emits: ['snowball'],
+    emits: ['snowball', 'export'],
     data() {
         return {
             filter: '',
@@ -111,11 +128,22 @@ export default {
                 method: this.method,
                 tagsOnly: false,
             });
-            this.filteredCount = this.$store.getters.currentPapers.length;
+            // this.filteredCount = this.$store.getters.currentPapers.length;
         },
 
         createFilterTag() {
             this.showModal = true;
+        },
+
+        newSheetFromSelected() {
+            const sheetId = `layer-${Object.keys(this.$store.state.sheets).length}`;
+            const sheetName = `Layer ${Object.keys(this.$store.state.sheets).length}`;
+            console.log(`[Toolbar][newSheetFromSelected] Adding new sheet (${sheetId}) named '${sheetName}'.`);
+            this.$store.commit('addSheet', {
+                id: sheetId, name: sheetName, papers: this.$store.state.selection,
+            });
+            console.log(`[Toolbar][newSheetFromSelected] Setting active sheet to '${sheetId}'.`);
+            this.$store.commit('setActiveSheet', sheetId);
         },
     },
     watch: {

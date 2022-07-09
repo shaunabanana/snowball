@@ -9,7 +9,7 @@
         <template #title>
             Please wait...
         </template>
-        <IconLoading spin /> Loading large datasets may take a while.
+        <IconLoading spin /> Processing large datasets may take a while.
     </a-modal>
 </template>
 
