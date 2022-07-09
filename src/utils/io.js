@@ -1,162 +1,155 @@
-// import Worker from "worker-loader!./worker.js";
-import { invoke } from '@tauri-apps/api/tauri';
-import { join } from '@tauri-apps/api/path';
+/* eslint-disable import/no-extraneous-dependencies */
+import { join } from 'path';
+import { mkdirSync, rmdirSync, existsSync } from 'fs';
+import { readFile, writeFile, unlink } from 'fs/promises';
 import { stringify, parse } from 'yaml';
 import sanitize from 'sanitize-basename';
-// import { resolve } from 'core-js/fn/promise';
-// import { exists } from 'tauri-plugin-fs-extra-api'
-
-// const worker = new Worker();
+import sequmise from 'sequmise';
 
 const FORMAT = '.yaml';
 
-export function writeProject(projectData) {
-    // worker.postMessage({
-    //     command: 'write',
-    //     path: path,
-    //     contents: JSON.stringify(data)
-    // })
-    console.log(projectData)
-    invoke('init_dir', {path: projectData.projectPath})
-
-    writeIndex(projectData);
-
-    join(projectData.projectPath, 'sheets').then(sheetsPath => {
-        invoke('init_dir', {path: sheetsPath}).then(() => {
-            Object.keys(projectData.sheets).forEach(key => {
-                writeSheet(projectData, key);
-            });
-        })
-    })
-
-    join(projectData.projectPath, 'papers').then(papersPath => {
-        invoke('init_dir', {path: papersPath}).then(() => {
-            Object.keys(projectData.papers).forEach(key => {
-                writePaper(projectData, key);
-            });
-        })
-    })
+export async function writeIndex(projectData) {
+    const indexPath = join(projectData.projectPath, `index${FORMAT}`);
+    const indexData = {
+        version: projectData.version,
+        sheets: Object.keys(projectData.sheets).map((key) => ({
+            id: key,
+            name: projectData.sheets[key].name,
+        })),
+        papers: Object.keys(projectData.papers),
+        tags: { ...projectData.tags },
+    };
+    await writeFile(indexPath, stringify(indexData), {
+        encoding: 'utf8',
+    });
 }
 
-export function writeIndex(projectData) {
-    join(projectData.projectPath, 'index' + FORMAT).then(indexPath => {
-        const indexData = {
-            sheets: Object.keys(projectData.sheets).map(key => ({
-                id: key,
-                name: projectData.sheets[key].name
-            })),
-            papers: Object.keys(projectData.papers),
-            tags: [...projectData.tags],
+export async function writeSheet(projectData, sheetId) {
+    const sheetPath = join(projectData.projectPath, 'sheets', sanitize(sheetId) + FORMAT);
+    await writeFile(sheetPath, stringify(projectData.sheets[sheetId]), {
+        encoding: 'utf8',
+    });
+}
+
+export async function writePaper(projectData, paperId) {
+    const paperPath = join(projectData.projectPath, 'papers', sanitize(paperId) + FORMAT);
+    await writeFile(paperPath, stringify(projectData.papers[paperId]), {
+        encoding: 'utf8',
+    });
+}
+
+export async function deleteSheet(projectData, sheetId) {
+    const sheetPath = join(projectData.projectPath, 'sheets', sanitize(sheetId) + FORMAT);
+    await unlink(sheetPath, { encoding: 'utf8' });
+}
+
+export async function deletePaper(projectData, paperId) {
+    const paperPath = join(projectData.projectPath, 'papers', sanitize(paperId) + FORMAT);
+    await unlink(paperPath, { encoding: 'utf8' });
+}
+
+export async function writeProject(projectData, scrap) {
+    const sheetsPath = join(projectData.projectPath, 'sheets');
+    const papersPath = join(projectData.projectPath, 'papers');
+
+    if (scrap) {
+        if (existsSync(projectData.projectPath)) {
+            rmdirSync(projectData.projectPath, { recursive: true });
         }
-        invoke('write_file', {
-            path: indexPath,
-            contents: stringify(indexData)
-        })
-    })
+        mkdirSync(projectData.projectPath);
+        mkdirSync(sheetsPath);
+        mkdirSync(papersPath);
+    }
+
+    await writeIndex(projectData);
+
+    await sequmise(Object.keys(projectData.sheets).map((key) => async () => {
+        await writeSheet(projectData, key);
+    }));
+
+    await sequmise(Object.keys(projectData.papers).map((key) => async () => {
+        await writePaper(projectData, key);
+    }));
 }
-
-export function writeSheet(projectData, sheetId) {
-    join(projectData.projectPath, 'sheets', sanitize(sheetId) + FORMAT).then(sheetPath => {
-        invoke('write_file', {
-            path: sheetPath,
-            contents: stringify(projectData.sheets[sheetId])
-        });
-    })
-}
-
-export function writePaper(projectData, paperId) {
-    join(projectData.projectPath, 'papers', sanitize(paperId) + FORMAT).then(paperPath => {
-        invoke('write_file', {
-            path: paperPath,
-            contents: stringify(projectData.papers[paperId])
-        });
-    })
-}
-
-export function readProject(path) {
-    return new Promise( resolve => {
-        const projectData = {
-            projectPath: path,
-            sheets: {},
-            papers: {},
-            tags: []
-        };
-        // Read index
-        readIndex(path).then(indexData => {
-            console.log(indexData);
-            projectData.tags = indexData.tags;
-
-            // Read sheets
-            Promise.all(
-                indexData.sheets.map(sheetInfo => readSheet(path, sheetInfo.id))
-            ).then(sheetsData => {
-                console.log(sheetsData);
-                sheetsData.forEach(sheet => {
-                    projectData.sheets[sheet.id] = sheet;
-                })
-
-                // Read papers
-                Promise.all(
-                    indexData.papers.map(paperId => readPaper(path, paperId))
-                ).then(papersData => {
-                    console.log(papersData);
-                    papersData.forEach(paper => {
-                        projectData.papers[paper.id] = paper;
-                    })
-
-                    // Finally resolve the promise
-                    resolve(projectData)
-                })
-            }).catch(errors => {
-                console.log('Error when reading sheets', errors)
-            })
-        });
-    })
-}
-
 
 export function readIndex(path) {
-    return new Promise( (resolve, reject) => {
-        join(path, 'index' + FORMAT).then(indexPath => {
-            invoke('read_file', {path: indexPath}).then(indexContent => {
-                try {
-                    const indexData = parse(indexContent);
-                    resolve(indexData)
-                } catch (error) {
-                    reject(error);
-                }
-                
-            })
-        })
+    return new Promise((resolve, reject) => {
+        const indexPath = join(path, `index${FORMAT}`);
+        readFile(indexPath, { encoding: 'utf8' }).then((indexContent) => {
+            try {
+                const indexData = parse(indexContent);
+                resolve(indexData);
+            } catch (error) {
+                reject(error);
+            }
+        });
     });
 }
 
 export function readSheet(path, sheetId) {
-    return new Promise( (resolve, reject) => {
-        join(path, 'sheets', sanitize(sheetId) + FORMAT).then(sheetPath => {
-            invoke('read_file', {path: sheetPath}).then(sheetContent => {
-                try {
-                    const sheetData = parse(sheetContent);
-                    resolve(sheetData)
-                } catch (error) {
-                    reject(error);
-                }
-            })
-        })
+    return new Promise((resolve, reject) => {
+        const sheetPath = join(path, 'sheets', sanitize(sheetId) + FORMAT);
+        readFile(sheetPath, { encoding: 'utf8' }).then((sheetContent) => {
+            try {
+                const sheetData = parse(sheetContent);
+                resolve(sheetData);
+            } catch (error) {
+                reject(error);
+            }
+        });
     });
 }
 
 export function readPaper(path, paperId) {
-    return new Promise( (resolve, reject) => {
-        join(path, 'papers', sanitize(paperId) + FORMAT).then(paperPath => {
-            invoke('read_file', {path: paperPath}).then(paperContent => {
-                try {
-                    const paperData = parse(paperContent);
-                    resolve(paperData)
-                } catch (error) {
-                    reject(error);
-                }
-            })
-        })
+    return new Promise((resolve, reject) => {
+        const paperPath = join(path, 'papers', sanitize(paperId) + FORMAT);
+        readFile(paperPath, { encoding: 'utf8' }).then((paperContent) => {
+            try {
+                const paperData = parse(paperContent);
+                resolve(paperData);
+            } catch (error) {
+                reject(error);
+            }
+        });
+    });
+}
+
+export function readProject(path) {
+    return new Promise((resolve) => {
+        const projectData = {
+            version: undefined,
+            projectPath: path,
+            sheets: {},
+            papers: {},
+            tags: [],
+        };
+        // Read index
+        readIndex(path).then((indexData) => {
+            projectData.version = indexData.version;
+            projectData.tags = indexData.tags;
+
+            // Read sheets
+            Promise.all(indexData.sheets.map((sheetInfo) => readSheet(path, sheetInfo.id)))
+                .then((sheetsData) => {
+                    sheetsData.forEach((sheet) => {
+                        projectData.sheets[sheet.id] = sheet;
+                    });
+
+                    // Read papers
+                    Promise.all(indexData.papers.map((paperId) => readPaper(path, paperId))).then(
+                        (papersData) => {
+                            papersData.forEach((paper) => {
+                                projectData.papers[paper.id] = paper;
+                            });
+
+                            // Finally resolve the promise
+                            resolve(projectData);
+                        },
+                    );
+                })
+                .catch((errors) => {
+                    console.log('[IO][readProject] Error when reading sheets', errors);
+                });
+        });
     });
 }

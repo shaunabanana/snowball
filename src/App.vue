@@ -1,157 +1,83 @@
 <template>
-    <el-tabs v-model="activeSheet" type="card" size="small">
-        <el-tab-pane
-            class="tab-pane"
-            v-for="sheet in $store.state.sheets"
-            :key="sheet.id"
-            :label="`${sheet.name} (${includedPapers(sheet).length}/${sheet.papers.length})`"
-            :name="sheet.id"
-        />
-    </el-tabs>
-    <file-import
-        v-if="currentSheet.papers.length === 0"
-        @import="addImportedPapers"
-    />
-    <data-table v-if="currentSheet.papers.length > 0" 
-        :data="currentPapers" 
-        @snowball="snowball(currentSheet)"/>
-
-    <project-screen v-model="projectPath" />
-    <loading-screen :show="$store.state.loading" />
-    
+    <a-config-provider :locale="enUS">
+        <a-layout class="app">
+            <Menu v-if="$store.state.projectPath" v-model:item="currentScreen" />
+            <LoadProject @done="showIdentity = true"/>
+            <ConfigIdentity :visible="showIdentity" @confirm="showIdentity = false"/>
+            <LoadingWait :visible="$store.state.loading"/>
+            <ProjectScreen v-if="$store.state.projectPath && currentScreen === 'project'" />
+            <PapersScreen v-if="$store.state.projectPath && currentScreen === 'screen'" />
+        </a-layout>
+    </a-config-provider>
 </template>
 
 <script>
-import { appWindow } from '@tauri-apps/api/window';
-import { trace, info, attachConsole } from 'tauri-plugin-log-api';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { ipcRenderer } from 'electron';
+import { Message } from '@arco-design/web-vue';
+import enUS from '@arco-design/web-vue/es/locale/lang/en-us';
+import log from 'electron-log';
 
-import FileImport from "@/components/FileImport.vue";
-import DataTable from "@/components/DataTable.vue";
-import ProjectScreen from "@/components/ProjectScreen.vue";
-import LoadingScreen from "@/components/LoadingScreen.vue";
+import Menu from '@/components/main/Menu.vue';
+import LoadProject from '@/components/main/LoadProject.vue';
+import ConfigIdentity from '@/components/main/ConfigIdentity.vue';
+import LoadingWait from '@/components/main/LoadingWait.vue';
+import ProjectScreen from '@/components/project/Main.vue';
+import PapersScreen from '@/components/papers/Main.vue';
 
-import { querySemanticScholar } from '@/utils/literature';
+const Store = require('electron-store');
+
+// import Query from '@/search';
 
 export default {
-    name: "App",
+    name: 'App',
     components: {
-        FileImport,
-        DataTable,
+        Menu,
+        LoadProject,
+        ConfigIdentity,
+        LoadingWait,
         ProjectScreen,
-        LoadingScreen
+        PapersScreen,
+    },
+
+    provide: {
+        config: new Store(),
     },
 
     data() {
         return {
-            showOpenScreen: true,
-            projectPath: '',
-            activeSheet: "core",
-            filter: "",
-            perPage: 100,
-            currentPage: 1,
-            detach: null
+            enUS,
+            currentScreen: 'project',
+            projectPath: null,
+            showIdentity: false,
         };
     },
 
-    methods: {
-        addImportedPapers(papers) {
-            trace(`Adding ${papers.length} new papers to sheet '${this.activeSheet}'.`);
-            this.$store.commit("addPapers", {
-                sheet: this.activeSheet,
-                papers: papers,
-            });
-            trace(`Removing loading screen.`);
-            this.$store.commit('setLoading', false);
-        },
-
-        includedPapers(sheet, forceDOI, forceNew) {
-            const includedPapers = [];
-            sheet.papers.forEach(paperId => {
-                if (this.$store.state.papers[paperId] && this.$store.state.papers[paperId].include) {
-                    if (forceDOI && this.$store.state.papers[paperId].doi) {
-                        if (forceNew && this.$store.state.papers[paperId].sheets.length > 1) return;
-                        includedPapers.push(this.$store.state.papers[paperId].doi);
-                    } else if (!forceDOI) {
-                        if (forceNew && this.$store.state.papers[paperId].sheets.length > 1) return;
-                        includedPapers.push(this.$store.state.papers[paperId].id);
-                    }
-                }
-            });
-            trace(`Sheet '${sheet.name}' has ${includedPapers.length} included papers.`);
-            return includedPapers;
-        },
-
-        snowball (sheet) {
-            trace(`Showing loading screen.`);
-            this.$store.commit('setLoading', true);
-            const includedPapers = this.includedPapers(sheet, true, true);
-
-            const newPapers = [];
-            Promise.all(includedPapers.map(doi => querySemanticScholar(doi))).then(results => {
-                results.forEach(result => {
-                    result.citations.forEach(paper => newPapers.push(paper));
-                    result.references.forEach(paper => newPapers.push(paper));
-                });
-                const sheetId = `layer-${Object.keys(this.$store.state.sheets).length}`;
-                const sheetName = `Layer ${Object.keys(this.$store.state.sheets).length}`;
-                trace(`Adding new sheet (${sheetId}) named '${sheetName}'.`);
-                this.$store.commit('addSheet', {id: sheetId, name: sheetName, papers: []});
-                trace(`Setting active sheet to '${sheetId}'.`);
-                this.activeSheet = sheetId;
-                this.addImportedPapers(newPapers);
-
-                info(`Snowballing finished for ${newPapers.length} papers.`);
-            });
-            
-        }
-    },
-
     mounted() {
-        attachConsole().then(detach => {
-            this.detach = detach;
-            trace('Logger attached to WebView.');
-        })
-    },
+        window.onerror = (message) => {
+            if (message === 'ResizeObserver loop limit exceeded') return;
+            Message.error(message);
+        };
 
-    beforeUnmount () {
-        this.detach();
-    },
+        Object.assign(console, log.functions);
 
-    computed: {
-        currentSheet () {
-            return this.$store.state.sheets[this.activeSheet];
-        },
+        ipcRenderer.invoke('get-version').then((version) => {
+            this.$store.commit('setVersion', version);
+        });
 
-        currentPapers () {
-            return this.currentSheet.papers.map(id => this.$store.state.papers[id]);
-        }
-    },
-
-    watch: {
-        projectPath () {
-            const fileName = this.projectPath.split('\\').pop().split('/').pop();
-            appWindow.setTitle(`${fileName} - Snowball`);
-        }
+        // document.body.setAttribute('arco-theme', 'dark');
     },
 };
 </script>
 
-<style>
+<style lang="scss">
 html,
-body {
-    font-family: "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB",
-        "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-}
-
+body,
+#app,
 .app {
     width: 100%;
     height: 100%;
-}
-
-.tab-pane {
-    padding: 0.1rem;
+    overflow: hidden;
+    background: var(--color-bg-1);
 }
 </style>

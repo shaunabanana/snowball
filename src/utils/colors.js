@@ -1,3 +1,1 @@
-export const tagColors = [
-    ''
-]
+// export default const tagColors = [];

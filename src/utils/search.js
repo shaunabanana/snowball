@@ -1,97 +1,102 @@
-import { Query } from "bibliothecary";
+import { Query } from 'bibliothecary';
 
 function booleanFilter(papers, query, fields, formatters) {
-  if (!fields) fields = ["title", "abstract", "keywords", "tags"];
+    const searchFields = fields || ['title', 'abstract', 'keywords', 'tags'];
 
-  try {
+    // try {
     const queryMatcher = new Query(query);
     const results = [];
 
-    for (const paper of papers) {
-      for (let field of fields) {
-        if (!paper || !paper[field]) continue;
+    papers.forEach((paper) => {
+        searchFields.some((field) => {
+            if (!paper || !paper[field]) return false;
 
-        let searchData = paper[field];
-        if (Array.isArray(paper[field])) {
-          if (formatters[field]) {
-            searchData = formatters[field](paper[field], paper);
-          } else {
-            searchData = paper[field].join(" ");
-          }
-        }
-        const matches = queryMatcher.search(searchData);
-        if (matches) {
-          results.push(paper);
-          break;
-        }
-      }
-    }
+            let searchData = paper[field];
+            if (Array.isArray(paper[field])) {
+                if (formatters[field]) {
+                    searchData = formatters[field](paper[field], paper);
+                } else {
+                    searchData = paper[field].join(' ');
+                }
+            }
+            const matches = queryMatcher.search(searchData);
+            if (matches) {
+                results.push(paper);
+                return true;
+            }
+            return false;
+        });
+    });
     return results;
-  } catch {
-    return [];
-  }
+    // } catch {
+    //     return [];
+    // }
 }
 
 function regexFilter(papers, query, fields, formatters) {
-  if (!fields) fields = ["title", "abstract", "keywords", "tags"];
-  try {
-    const search = new RegExp(query);
-    const results = [];
+    // function regexFilter(papers, query) {
+    const searchFields = fields || ['title', 'abstract', 'keywords', 'tags'];
 
-    for (const paper of papers) {
-      for (let field of fields) {
-        if (!paper || !paper[field]) continue;
+    try {
+        const search = new RegExp(query);
+        const results = [];
 
-        let searchData = paper[field];
-        if (Array.isArray(paper[field])) {
-          if (formatters[field]) {
-            searchData = formatters[field](paper[field], paper);
-          } else {
-            searchData = paper[field].join(" ");
-          }
-        }
-        const matches = search.test(searchData);
-        if (matches) {
-          results.push(paper);
-          break;
-        }
-      }
+        papers.forEach((paper) => {
+            searchFields.some((field) => {
+                if (!paper || !paper[field]) return false;
+
+                let searchData = paper[field];
+                if (Array.isArray(paper[field])) {
+                    if (formatters[field]) {
+                        searchData = formatters[field](paper[field], paper);
+                    } else {
+                        searchData = paper[field].join(' ');
+                    }
+                }
+                const matches = search.test(searchData);
+                // console.log(searchData, matches);
+                if (matches) {
+                    results.push(paper);
+                    return true;
+                }
+                return false;
+            });
+        });
+        return results;
+    } catch {
+        return [];
     }
-    return results;
-  } catch {
-    return [];
-  }
 }
 
 export function filter(method, papers, query, fields, formatters) {
-  if (method === "boolean") {
-    return booleanFilter(papers, query, fields, formatters);
-  } else if (method === "regex") {
-    return regexFilter(papers, query, fields, formatters);
-  }
-  return [];
+    if (method.toLowerCase() === 'boolean') {
+        return booleanFilter(papers, query, fields, formatters);
+    }
+    if (method.toLowerCase() === 'regexp') {
+        return regexFilter(papers, query, fields, formatters);
+    }
+    return [];
 }
 
 function booleanMatch(text, query) {
-  try {
-    const queryMatcher = new Query(query);
-    const results = queryMatcher.search(text);
-    if (results) {
-      return results.map((match) => ({
-        start: match.start,
-        length: match.length,
-      }));
-    } else {
-      return false;
+    try {
+        const queryMatcher = new Query(query);
+        const results = queryMatcher.search(text);
+        if (results) {
+            return results.map((result) => ({
+                start: result.index,
+                length: result.length,
+            }));
+        }
+        return false;
+    } catch {
+        return [];
     }
-  } catch {
-    return [];
-  }
 }
 
 export function match(method, text, query) {
-  if (method === "boolean") {
-    return booleanMatch(text, query);
-  }
-  return [];
+    if (method.toLowerCase() === 'boolean') {
+        return booleanMatch(text, query);
+    }
+    return [];
 }

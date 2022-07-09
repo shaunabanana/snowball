@@ -1,92 +1,195 @@
-import { createStore } from 'vuex'
-import { writeProject, writePaper, writeSheet, writeIndex } from '@/utils/io'
+/* eslint-disable object-curly-newline */
+import { createStore } from 'vuex';
+// import { compare } from 'compare-versions';
 
+import { filter } from '@/utils/search';
+import { processTags, updateAutoTags } from '@/utils/tags';
+// import convertFromOlderVersion from '@/utils/compatibility';
 
-const filePersistence = (store) => {
-
-    const ignoreEvents = ['setLoading', 'setProjectPath', 'loadProject'];
-    // called when the store is initialized
-    store.subscribe((mutation, state) => {
-        if (ignoreEvents.includes(mutation.type)) return;
-        console.log(mutation);
-        if (mutation.type === 'addPapers') {
-            console.log(state);
-            console.log('Saving state to', state.projectPath);
-            const startTime = Date.now();
-            writeProject(state);
-            console.log('Posting message took', Date.now() - startTime);
-        } else if (mutation.type === 'updatePaper') {
-            writePaper(state, mutation.payload.paper);
-        } else if (mutation.type === 'addTag') {
-            writeIndex(state);
-        } else if (mutation.type === 'addSheet') {
-            writeIndex(state);
-            writeSheet(state, mutation.payload.id);
-        }
-    });
-}
+import filePersistence from '@/store/persistence';
+// import historyTracking from '@/store/history';
 
 export default createStore({
     state: {
+        version: null,
         projectPath: '',
         sheets: {
             core: {
-                id: 'core', 
-                name: 'Core', 
-                papers: []
-            }
+                id: 'core',
+                name: 'Core',
+                papers: [],
+            },
         },
         papers: {},
-        tags: [],
+        tags: {},
+
+        user: {
+            name: null,
+            email: null,
+            salt: null,
+        },
+
         loading: false,
+
+        filter: '',
+        filterTags: false,
+        filterMethod: 'Boolean',
+        filterChanged: false,
+        filterResult: [],
+
+        activeSheet: 'core',
+        activePaper: null,
+        selection: [],
     },
     getters: {
+        currentSheet(state) {
+            if (!state.activeSheet) {
+                return {
+                    id: 'all',
+                    name: 'All',
+                    papers: Object.keys(state.papers),
+                };
+            }
+            return state.sheets[state.activeSheet];
+        },
+
+        currentPapers(state) {
+            let currentPapers;
+            if (state.activeSheet) {
+                const currentSheet = state.sheets[state.activeSheet];
+                currentPapers = currentSheet.papers.map((id) => state.papers[id]);
+            } else {
+                currentPapers = Object.keys(state.papers).map((id) => state.papers[id]);
+            }
+
+            if (state.filter.length === 0) return currentPapers;
+            if (!state.filterChanged) return state.filterResult;
+            state.filterResult = filter(
+                state.filterMethod,
+                currentPapers,
+                state.filter,
+                state.filterTags ? ['tags'] : ['title', 'abstract', 'keywords', 'tags'],
+                {
+                    tags: (tags, paper) =>
+                        // eslint-disable-next-line implicit-arrow-linebreak
+                        processTags(state, paper)
+                            .map((tag) => tag.text)
+                            .join(' '),
+                },
+            );
+            const newKeys = [];
+            state.filterResult.forEach((paper) => {
+                if (state.selection.includes(paper.id)) {
+                    newKeys.push(paper.id);
+                }
+            });
+            state.selection = newKeys;
+            state.filterChanged = false;
+            return state.filterResult;
+        },
+
+        decided(state) {
+            return Object.keys(state.papers).filter((paperId) => {
+                const paper = state.papers[paperId];
+                return paper.decision !== 'undecided';
+            }).map((paperId) => state.papers[paperId]);
+        },
+
+        included(state) {
+            return Object.keys(state.papers).filter((paperId) => {
+                const paper = state.papers[paperId];
+                return paper.decision === 'include';
+            }).map((paperId) => state.papers[paperId]);
+        },
+
+        excluded(state) {
+            return Object.keys(state.papers).filter((paperId) => {
+                const paper = state.papers[paperId];
+                return paper.decision === 'exclude';
+            }).map((paperId) => state.papers[paperId]);
+        },
+
+        tagUsageCount: (state) => (tagId) => Object.keys(state.papers).filter((paperId) => {
+            const paper = state.papers[paperId];
+            return paper.tags.includes(tagId);
+        }).length,
+
+        activeIncludedPapers(state) {
+            const currentSheet = state.sheets[state.activeSheet];
+            const currentPapers = currentSheet.papers.map((id) => state.papers[id]);
+            return currentPapers.filter((paper) => paper.decision === 'include');
+        },
     },
     mutations: {
-        setLoading (state, value) {
+        setUser(state, user) {
+            state.user = user;
+        },
+
+        setVersion(state, value) {
+            state.version = value;
+        },
+
+        setSelection(state, value) {
+            state.selection = value;
+        },
+
+        setFilter(state, payload) {
+            state.filter = payload.filter;
+            state.filterTags = payload.tagsOnly;
+            state.filterMethod = payload.method;
+            state.filterChanged = true;
+        },
+
+        setActiveSheet(state, value) {
+            state.activeSheet = value;
+            state.selection = [];
+            state.filterChanged = true;
+        },
+
+        setActivePaper(state, paperId) {
+            state.activePaper = paperId ? state.papers[paperId] : null;
+        },
+
+        setLoading(state, value) {
             state.loading = value;
         },
 
-        setProjectPath (state, path) {
-            state.projectPath = path;
+        setProjectPath(state, payload) {
+            state.projectPath = payload.path;
         },
 
-        loadProject (state, data) {
+        loadProject(state, data) {
             state.sheets = data.sheets;
             state.papers = data.papers;
             state.tags = data.tags;
+
+            updateAutoTags(state);
         },
 
-        addPapers (state, payload) {
+        addPapers(state, payload) {
             payload.papers.sort((a, b) => {
                 if (typeof a.year === 'number' && typeof b.year === 'number') {
                     return b.year - a.year;
-                } else if (typeof a.year === 'string' && typeof b.year === 'number') {
-                    return 1;
-                } else if (typeof a.year === 'number' && typeof b.year === 'string') {
-                    return -1;
-                } else {
-                    return 0;
                 }
-            })
-            for (const paper of payload.papers) {
-                paper['tags'] = [];
-                // if (!paper.doi) paper['tags'].push({ type: 'danger', text: 'No DOI'});
-                // if (!paper.abstract) paper['tags'].push({ type: 'warning', text: 'No Abstract'});
+                if (typeof a.year === 'string' && typeof b.year === 'number') {
+                    return 1;
+                }
+                if (typeof a.year === 'number' && typeof b.year === 'string') {
+                    return -1;
+                }
+                return 0;
+            });
 
-                paper['include'] = false;
-                paper['notes'] = '';
-                paper['sheets'] = [];
+            payload.papers.forEach((paperData) => {
+                const paper = { ...paperData };
 
-                // if (state.papers[paper.id]) {
-                //     console.log("Existing paper", paper);
-                //     if (!state.sheets[payload.sheet].papers.includes(paper.id)) {
-                //         state.sheets[payload.sheet].papers.push(paper.id);
-                //     }
-                //     if (!state.papers[paper.id].sheets.includes(payload.sheet)) {
-                //         state.papers[paper.id].sheets.push(payload.sheet);
-                //     }
-                // } else {
+                paper.tags = [];
+                paper.include = false;
+                paper.decision = 'undecided';
+                paper.notes = '';
+                // paper.comments = [];
+                paper.sheets = [];
+
                 if (!state.papers[paper.id]) {
                     state.papers[paper.id] = paper;
                     if (!state.sheets[payload.sheet].papers.includes(paper.id)) {
@@ -96,27 +199,81 @@ export default createStore({
                         paper.sheets.push(payload.sheet);
                     }
                 }
+            });
+
+            updateAutoTags(state);
+        },
+
+        updatePaper(state, payload) {
+            let papers = payload.paper;
+            if (!Array.isArray(payload.paper)) {
+                papers = [payload.paper];
             }
+            papers.forEach((paper) => {
+                if (!state.papers[paper]) return;
+                Object.entries(payload.updates).forEach(([key, value]) => {
+                    state.papers[paper][key] = value;
+                });
+                console.log(state.papers[paper].tags);
+            });
         },
 
-        updatePaper (state, payload) {
-            if (!state.papers[payload.paper]) return;
-            for (let [key, value] of Object.entries(payload.updates)) {
-                state.papers[payload.paper][key] = value;
+        deletePaper(state, paperId) {
+            delete state.papers[paperId];
+        },
+
+        addTag(state, tag) {
+            state.tags[tag.id] = tag;
+            updateAutoTags(state);
+        },
+
+        updateTag(state, payload) {
+            let tags = payload.tag;
+            if (!Array.isArray(payload.tag)) {
+                tags = [payload.tag];
             }
+            tags.forEach((tag) => {
+                if (!state.tags[tag]) return;
+                Object.entries(payload.updates).forEach(([key, value]) => {
+                    state.tags[tag][key] = value;
+                });
+            });
         },
 
-        addTag (state, tag) {
-            if (!state.tags.includes(tag)) state.tags.push(tag);
+        deleteTag(state, tag) {
+            delete state.tags[tag.id];
+            updateAutoTags(state);
         },
 
-        addSheet (state, sheet) {
-            state.sheets[sheet.id] = sheet;
-        }
+        addSheet(state, sheet) {
+            state.sheets[sheet.id] = {
+                id: sheet.id,
+                name: sheet.name,
+                papers: sheet.papers,
+            };
+        },
+
+        updateSheet(state, payload) {
+            let sheets = payload.sheet;
+            if (!Array.isArray(payload.sheet)) {
+                sheets = [payload.sheet];
+            }
+            sheets.forEach((sheet) => {
+                if (!state.sheets[sheet]) return;
+                Object.entries(payload.updates).forEach(([key, value]) => {
+                    state.sheets[sheet][key] = value;
+                });
+            });
+        },
+
+        deleteSheet(state, sheet) {
+            delete state.sheets[sheet];
+        },
     },
-    actions: {
-    },
-    modules: {
-    },
-    plugins: [filePersistence]
-})
+    actions: {},
+    modules: {},
+    plugins: [
+        filePersistence,
+        // historyTracking
+    ],
+});

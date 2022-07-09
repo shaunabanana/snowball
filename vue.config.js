@@ -1,9 +1,29 @@
-const { defineConfig } = require('@vue/cli-service')
+const { defineConfig } = require('@vue/cli-service');
+
 module.exports = defineConfig({
-  transpileDependencies: true,
-  configureWebpack: {
-    resolve: {
-      fallback: { "querystring": require.resolve("querystring-es3") }
-    }
-  }
-})
+    transpileDependencies: true,
+    configureWebpack: {
+        experiments: {
+            topLevelAwait: true,
+        },
+    },
+    pluginOptions: {
+        electronBuilder: {
+            externals: ['electron'],
+            nodeIntegration: true,
+            contextIsolation: false,
+            builderOptions: {
+                fileAssociations: [
+                    {
+                        ext: 'snowball',
+                        name: 'Snowball Project',
+                        description: 'Literature review project created with Snowball.',
+                        role: 'Editor',
+                        icon: 'document.icns',
+                        // isPackage: true,
+                    },
+                ],
+            },
+        },
+    },
+});
