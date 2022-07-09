@@ -37,10 +37,12 @@
             </a-menu-item>
             </a-tooltip> -->
 
-            <a-menu-item key="settings">
-                <icon-settings />
-                Settings
-            </a-menu-item>
+            <a-tooltip content="Functionality coming soon!" position="right">
+                <a-menu-item key="settings" disabled>
+                    <icon-settings />
+                    Settings
+                </a-menu-item>
+            </a-tooltip>
         </a-menu>
     </a-layout-sider>
 </template>
