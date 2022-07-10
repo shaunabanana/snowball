@@ -11,10 +11,14 @@
             v-if="editable"
             ref="input"
             size="mini"
-            style="width: 100px; margin-top: 0.5rem"
+            style="margin-top: 0.5rem"
             placeholder="New tag..."
             v-model:model-value="inputValue"
             :data="autocompleteTags"
+            :trigger-props="{
+                autoFitPopupWidth: false,
+                autoFitPopupMinWidth: true,
+            }"
             @select="addTag($event)"
             @keyup.enter="addTag(inputValue)"
         />
