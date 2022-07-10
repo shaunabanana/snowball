@@ -65,6 +65,7 @@
                 <a-input-search search-button allow-clear
                     placeholder="Enter filter criteria..."
                     v-model="filter"
+                    :error="syntaxError"
                     @search="filterPapers"
                     @press-enter="filterPapers"
                     @clear="filterPapers"
@@ -82,8 +83,17 @@
                     </template>
                     <template #suffix>
                         <span v-if="$store.state.filter.length > 0">
-                            {{this.$store.getters.currentPapers.length}} filtered.
-                            <a-button size="mini" type="text" @click="createFilterTag">
+                            <span v-if="!syntaxError">
+                                {{this.$store.getters.currentPapers.length}} filtered.
+                            </span>
+
+                            <span v-else style="color: rgb(var(--red-6))">
+                                Wrong search syntax
+                            </span>
+
+                            <a-button v-if="!syntaxError" size="mini" type="text"
+                                @click="createFilterTag"
+                            >
                                 Save as tag...
                             </a-button>
                         </span>
@@ -119,6 +129,10 @@ export default {
             return this.$store.getters.currentPapers.every(
                 (paper) => paper.decision !== 'include',
             );
+        },
+
+        syntaxError() {
+            return this.$store.state.filterError && this.filter === this.$store.state.filter;
         },
     },
     methods: {

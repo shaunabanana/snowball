@@ -35,6 +35,7 @@ export default createStore({
         filterTags: false,
         filterMethod: 'Boolean',
         filterChanged: false,
+        filterError: false,
         filterResult: [],
 
         activeSheet: 'core',
@@ -62,29 +63,43 @@ export default createStore({
                 currentPapers = Object.keys(state.papers).map((id) => state.papers[id]);
             }
 
-            if (state.filter.length === 0) return currentPapers;
-            if (!state.filterChanged) return state.filterResult;
-            state.filterResult = filter(
-                state.filterMethod,
-                currentPapers,
-                state.filter,
-                state.filterTags ? ['tags'] : ['title', 'abstract', 'keywords', 'tags'],
-                {
-                    tags: (tags, paper) =>
-                        // eslint-disable-next-line implicit-arrow-linebreak
-                        processTags(state, paper)
-                            .map((tag) => tag.text)
-                            .join(' '),
-                },
-            );
-            const newKeys = [];
-            state.filterResult.forEach((paper) => {
-                if (state.selection.includes(paper.id)) {
-                    newKeys.push(paper.id);
-                }
-            });
-            state.selection = newKeys;
-            state.filterChanged = false;
+            if (state.filter.length === 0) {
+                state.filterError = false;
+                return currentPapers;
+            }
+            if (!state.filterChanged) {
+                state.filterError = false;
+                return state.filterResult;
+            }
+            try {
+                state.filterResult = filter(
+                    state.filterMethod,
+                    currentPapers,
+                    state.filter,
+                    state.filterTags ? ['tags'] : ['title', 'abstract', 'keywords', 'tags'],
+                    {
+                        tags: (tags, paper) =>
+                            // eslint-disable-next-line implicit-arrow-linebreak
+                            processTags(state, paper)
+                                .map((tag) => tag.text)
+                                .join(' '),
+                    },
+                );
+
+                const newKeys = [];
+                state.filterResult.forEach((paper) => {
+                    if (state.selection.includes(paper.id)) {
+                        newKeys.push(paper.id);
+                    }
+                });
+                state.selection = newKeys;
+                state.filterChanged = false;
+                state.filterError = false;
+            } catch (error) {
+                state.filterError = true;
+                console.log(error);
+            }
+
             return state.filterResult;
         },
 
