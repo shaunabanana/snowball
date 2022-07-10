@@ -20,7 +20,7 @@ module.exports = defineConfig({
                         description: 'Literature review project created with Snowball.',
                         role: 'Editor',
                         icon: 'document.icns',
-                        // isPackage: true,
+                        isPackage: true,
                     },
                 ],
             },
