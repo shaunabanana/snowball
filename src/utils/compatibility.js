@@ -25,13 +25,23 @@ export default function convertFromOlderVersion(state, data) {
             const paperTags = [];
             paper.tags.forEach((tagData) => {
                 // Tags should be reformatted.
-                if (!tagData.text) return;
-                const tagId = tagData.text;
+                let tagId;
+                let tagText;
+                if (!tagData.text && typeof tagData === 'string') {
+                    tagId = tagData;
+                    tagText = tagData;
+                } else if (tagData.text) {
+                    tagId = tagData.text;
+                    tagText = tagData.text;
+                } else {
+                    return;
+                }
+                // const tagId = tagData.text;
                 const tag = {
                     id: tagId,
                     type: 'text',
                     color: 'blue',
-                    text: tagData.text,
+                    text: tagText,
                 };
                 // Tags should be moved from inside papers to project level.
                 paperTags.push(tagId);
