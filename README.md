@@ -41,3 +41,6 @@ Please file an issue [here](https://github.com/shaunabanana/snowball/issues), or
 ## Support me
 
 <a href="https://www.buymeacoffee.com/shengchen" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+![AFDian](./assets/afdian.jpg)
+[爱发电](https://afdian.net/@shaunabanana)
