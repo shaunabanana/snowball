@@ -1,6 +1,6 @@
 <template>
     <a-space style="flex-wrap: wrap;">
-        <a-popover v-for="tag in tags" :key="tag.id" >
+        <a-popover v-for="tag in sortedTags" :key="tag.id" >
             <Tag
                 style="margin-top: 0.5rem"
                 :color="tag.color"
@@ -71,6 +71,14 @@ export default {
             method: '',
             filter: '',
         };
+    },
+
+    computed: {
+        sortedTags() {
+            const tags = [...Object.keys(this.tags).map((tagId) => this.tags[tagId])];
+            tags.sort((a, b) => a.text.localeCompare(b.text));
+            return tags;
+        },
     },
 
     methods: {

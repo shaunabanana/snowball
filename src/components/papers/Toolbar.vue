@@ -154,6 +154,18 @@ export default {
                 this.filteredCount = this.$store.getters.currentPapers.length;
             },
         },
+
+        method() {
+            console.log(`[Toolbar][Watch] Filtering method changed to '${this.method}'.`);
+            if (this.filter.length > 0 && this.$store.state.filter === this.filter) {
+                console.log(`[Toolbar][Watch] Re-filtering with '${this.method}'.`);
+                this.$store.commit('setFilter', {
+                    filter: this.filter,
+                    method: this.method,
+                    tagsOnly: false,
+                });
+            }
+        },
     },
 };
 </script>

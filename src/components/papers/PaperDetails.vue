@@ -12,9 +12,11 @@
         size="medium"
         layout="vertical"
         style="padding: 0.5rem; padding-left: 1rem"
-        :title="$store.state.activePaper.title"
         :column="1"
     >
+        <template #title>
+            <span ref="title">{{$store.state.activePaper.title}}</span>
+        </template>
         <a-descriptions-item>
             <TagEditor />
         </a-descriptions-item>
@@ -29,7 +31,7 @@
 
         <a-descriptions-item label="Abstract">
             <span v-if="$store.state.activePaper.abstract && !editingAbstract">
-                {{$store.state.activePaper.abstract}}
+                <span ref="abstract">{{$store.state.activePaper.abstract}}</span>
                 <a-button size="mini" type="text" @click="editAbstract">
                     Edit
                 </a-button>
@@ -43,8 +45,10 @@
             />
         </a-descriptions-item>
 
-        <a-descriptions-item label="Keywords" v-if="$store.state.activePaper.keywords.length > 0">
-            {{$store.state.activePaper.keywords.join(', ')}}
+        <a-descriptions-item label="Keywords"
+            v-if="$store.state.activePaper.keywords.length > 0"
+        >
+            <span ref="keywords">{{$store.state.activePaper.keywords.join(', ')}}</span>
         </a-descriptions-item>
 
         <a-descriptions-item label="DOI">
@@ -123,9 +127,12 @@
 
 <script>
 import { nextTick } from 'vue';
-import TagEditor from '@/components/tags/TagEditor.vue';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { ipcRenderer } from 'electron';
+import Mark from 'mark.js';
+import TagEditor from '@/components/tags/TagEditor.vue';
+
+import { match } from '@/utils/search';
 
 export default {
     name: 'PaperDetails',
@@ -184,6 +191,73 @@ export default {
             }
             return '';
         },
+
+        highlightField(field, preprocess) {
+            try {
+                console.log(`[PaperDetails][highlightField] Highlighting ${field}`);
+                const mark = new Mark(this.$refs[field]);
+                console.log(`[PaperDetails][highlightField] Element is ${this.$refs[field]}`);
+                mark.unmark();
+                if (this.$store.state.filterMethod.toLowerCase() === 'boolean') {
+                    const fieldData = preprocess
+                        ? preprocess(this.$store.state.activePaper[field])
+                        : this.$store.state.activePaper[field];
+
+                    console.log(`[PaperDetails][highlightField] Field data is "${fieldData}".`);
+                    const matches = match(
+                        this.$store.state.filterMethod,
+                        fieldData,
+                        this.$store.state.filter,
+                    );
+
+                    console.log(`[PaperDetails][highlightField] Matches: "${JSON.stringify(matches)}".`);
+                    nextTick(() => {
+                        mark.markRanges(matches);
+                    });
+                } else if (this.$store.state.filterMethod.toLowerCase() === 'regexp') {
+                    nextTick(() => {
+                        mark.markRegExp(new RegExp(this.$store.state.filter));
+                    });
+                }
+            } catch {
+                console.log('Error highlighting. Abort.');
+            }
+        },
+
+        highlight() {
+            this.highlightField('title');
+            this.highlightField('abstract');
+            this.highlightField('keywords', (keywords) => keywords.join(', '));
+        },
+    },
+
+    watch: {
+        // eslint-disable-next-line func-names
+        '$store.state.activePaper': function () {
+            if (!this.$store.state.activePaper) return;
+            console.log('[PaperDetails][Watch] Active paper changed. Re-highlighting.');
+            this.highlight();
+        },
+
+        // eslint-disable-next-line func-names
+        '$store.state.filter': function () {
+            if (!this.$store.state.filter || this.$store.state.filter.length === 0) return;
+            console.log('[PaperDetails][Watch] Filter changed. Re-highlighting.');
+            this.highlight();
+        },
+
+        // eslint-disable-next-line func-names
+        '$store.state.filterMethod': function () {
+            if (!this.$store.state.filter || this.$store.state.filter.length === 0) return;
+            console.log('[PaperDetails][Watch] Filter method changed. Re-highlighting.');
+            this.highlight();
+        },
     },
 };
 </script>
+
+<style>
+/* mark {
+    background: var(--color-warning);
+} */
+</style>

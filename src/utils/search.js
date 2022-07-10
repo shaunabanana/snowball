@@ -37,35 +37,35 @@ function regexFilter(papers, query, fields, formatters) {
     // function regexFilter(papers, query) {
     const searchFields = fields || ['title', 'abstract', 'keywords', 'tags'];
 
-    try {
-        const search = new RegExp(query);
-        const results = [];
+    // try {
+    const search = new RegExp(query);
+    const results = [];
 
-        papers.forEach((paper) => {
-            searchFields.some((field) => {
-                if (!paper || !paper[field]) return false;
+    papers.forEach((paper) => {
+        searchFields.some((field) => {
+            if (!paper || !paper[field]) return false;
 
-                let searchData = paper[field];
-                if (Array.isArray(paper[field])) {
-                    if (formatters[field]) {
-                        searchData = formatters[field](paper[field], paper);
-                    } else {
-                        searchData = paper[field].join(' ');
-                    }
+            let searchData = paper[field];
+            if (Array.isArray(paper[field])) {
+                if (formatters[field]) {
+                    searchData = formatters[field](paper[field], paper);
+                } else {
+                    searchData = paper[field].join(' ');
                 }
-                const matches = search.test(searchData);
-                // console.log(searchData, matches);
-                if (matches) {
-                    results.push(paper);
-                    return true;
-                }
-                return false;
-            });
+            }
+            const matches = search.test(searchData);
+            // console.log(searchData, matches);
+            if (matches) {
+                results.push(paper);
+                return true;
+            }
+            return false;
         });
-        return results;
-    } catch {
-        return [];
-    }
+    });
+    return results;
+    // } catch {
+    //     return [];
+    // }
 }
 
 export function filter(method, papers, query, fields, formatters) {
@@ -79,19 +79,20 @@ export function filter(method, papers, query, fields, formatters) {
 }
 
 function booleanMatch(text, query) {
-    try {
-        const queryMatcher = new Query(query);
-        const results = queryMatcher.search(text);
-        if (results) {
-            return results.map((result) => ({
-                start: result.index,
-                length: result.length,
-            }));
-        }
-        return false;
-    } catch {
-        return [];
+    // try {
+    const queryMatcher = new Query(query);
+    const results = queryMatcher.search(text);
+    if (results) {
+        console.log(results);
+        return results.map((result) => ({
+            start: result.start,
+            length: result.length,
+        }));
     }
+    return false;
+    // } catch {
+    //     return [];
+    // }
 }
 
 export function match(method, text, query) {
