@@ -16,7 +16,7 @@
                     :style="{ height: `${height}px` }"
                 >
                     <template #first>
-                        <Table :height="tableHeight" />
+                        <Table/>
                     </template>
                     <template #second>
                         <div style="padding: 0.5rem">
@@ -53,7 +53,6 @@ export default {
         return {
             detailsSplitRatio: 1,
             tableSplitRatio: 0.8,
-            tableHeight: 100,
         };
     },
 

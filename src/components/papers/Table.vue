@@ -1,5 +1,5 @@
 <template>
-    <a-table
+    <a-table virtualized
         class="paper-table"
         id="paper-table"
         ref="table"
@@ -121,13 +121,13 @@ export default {
         },
         width: {
             type: Number,
-            default: 100,
+            default: 400,
         },
     },
 
     data() {
         return {
-            height: 200,
+            height: 400,
             rowSelection: {
                 type: 'checkbox',
                 showCheckedAll: true,
@@ -169,12 +169,11 @@ export default {
         },
     },
 
-    // watch: {
-    //     // eslint-disable-next-line func-names
-    //     '$store.getters.currentPapers': function () {
-    //         console.log(this.$refs.table);
-    //     },
-    // },
+    watch: {
+        height() {
+            console.log(this.height);
+        },
+    },
 };
 </script>
 
