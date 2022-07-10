@@ -25,6 +25,7 @@ export default function convertFromOlderVersion(state, data) {
             const paperTags = [];
             paper.tags.forEach((tagData) => {
                 // Tags should be reformatted.
+                if (!tagData.text) return;
                 const tagId = tagData.text;
                 const tag = {
                     id: tagId,
