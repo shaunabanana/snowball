@@ -13,6 +13,7 @@ module.exports = defineConfig({
             nodeIntegration: true,
             contextIsolation: false,
             builderOptions: {
+                productName: 'Snowball',
                 fileAssociations: [
                     {
                         ext: 'snowball',
