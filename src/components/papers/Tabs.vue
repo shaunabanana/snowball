@@ -27,7 +27,7 @@
                         updates: { name: sheet.name }
                     })"
                 >
-                    {{ sheet.name }}
+                    {{ sheet.name }} ({{sheet.papers.length}})
                 </a-typography-paragraph>
             </template>
         </a-tab-pane>

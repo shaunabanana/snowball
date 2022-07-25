@@ -72,3 +72,30 @@ export function updateAutoTags(state) {
         paper.tags = paper.tags.filter((tagId) => state.tags[tagId]);
     });
 }
+
+export function updateTagIds(state) {
+    // Merge tags with the same text (use text as ID).
+    const newTags = {};
+    Object.keys(state.tags).forEach((tagId) => {
+        const tag = state.tags[tagId];
+        if (tag.type === 'text') {
+            tag.id = tag.text;
+        }
+        newTags[tag.id] = tag;
+    });
+
+    // Update all paper tag records with the same text.
+    Object.keys(state.papers).forEach((paperId) => {
+        const paper = state.papers[paperId];
+        const newPaperTags = new Set(paper.tags.map((tid) => {
+            const tag = state.tags[tid];
+            if (tag.type === 'text') {
+                return state.tags[tid].text;
+            }
+            return tid;
+        }));
+        paper.tags = [...newPaperTags];
+    });
+
+    state.tags = newTags;
+}
