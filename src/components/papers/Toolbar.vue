@@ -58,6 +58,10 @@
                     </template>
                     To new sheet
                 </a-button>
+
+                <span v-if="$store.state.selection.length" style="color: var(--color-text-2)">
+                    {{$store.state.selection.length}} selected.
+                </span>
             </a-space>
         </a-col>
         <a-col :span="12" style="padding-right: 1rem">
