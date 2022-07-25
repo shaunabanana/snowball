@@ -3,7 +3,7 @@ import { createStore } from 'vuex';
 // import { compare } from 'compare-versions';
 
 import { filter } from '@/utils/search';
-import { processTags, updateAutoTags } from '@/utils/tags';
+import { processTags, updateAutoTags, updateTagIds } from '@/utils/tags';
 // import convertFromOlderVersion from '@/utils/compatibility';
 
 import filePersistence from '@/store/persistence';
@@ -253,6 +253,7 @@ export default createStore({
                     state.tags[tag][key] = value;
                 });
             });
+            updateTagIds(state);
         },
 
         deleteTag(state, tag) {

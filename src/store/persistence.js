@@ -32,10 +32,12 @@ export default function filePersistence(store) {
             } else if (
                 mutation.type === 'addTag'
                 || mutation.type === 'deleteTag'
-                || mutation.type === 'updateTag'
             ) {
                 console.log(`[Persist][${mutation.type}]`, JSON.stringify(mutation.payload));
                 await writeIndex(state);
+            } else if (mutation.type === 'updateTag') {
+                console.log(`[Persist][updateTag] ${JSON.stringify(mutation.payload)}`);
+                await writeProject(state);
             } else if (mutation.type === 'addSheet') {
                 console.log('[Persist][addSheet]', mutation.payload.id);
                 await writeIndex(state);
