@@ -72,7 +72,7 @@ export default {
 
     methods: {
         setWindowTitle(filePath) {
-            ipcRenderer.send('set-title', basename(filePath));
+            ipcRenderer.send('set-title', `${basename(filePath)} - Snowball`);
         },
 
         newProject() {
