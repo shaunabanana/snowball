@@ -14,6 +14,7 @@ module.exports = defineConfig({
             contextIsolation: false,
             builderOptions: {
                 productName: 'Snowball',
+                appId: 'design.shengchen.snowball',
                 fileAssociations: [
                     {
                         ext: 'snowball',
@@ -24,6 +25,11 @@ module.exports = defineConfig({
                         isPackage: true,
                     },
                 ],
+                afterSign: 'electron-builder-notarize',
+                mac: {
+                    hardenedRuntime: true,
+                    entitlements: './node_modules/electron-builder-notarize/entitlements.mac.inherit.plist',
+                },
             },
         },
     },
