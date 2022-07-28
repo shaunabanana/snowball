@@ -24,7 +24,7 @@ function processCitationJs(fileContent, preprocess) {
         // eslint-disable-next-line no-underscore-dangle
         delete originalRecord._graph;
         return {
-            id: record.DOI ? record.DOI : record.id,
+            id: record.DOI ? record.DOI.toLowerCase() : record.id.toLowerCase(),
             doi: record.DOI,
             type: record.type,
             title: record.title,

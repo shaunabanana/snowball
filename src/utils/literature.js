@@ -6,7 +6,7 @@ function formatSemanticScholarPaper(paper) {
         paperId = paper.externalIds.DOI;
     }
     return {
-        id: paperId,
+        id: paperId.toLowerCase(),
         doi: paper.externalIds ? paper.externalIds.DOI : undefined,
         type: 'paper',
         title: paper.title,
