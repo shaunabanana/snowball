@@ -57,14 +57,14 @@ function convertZeroOneXToOneOneX(state, data) {
     return newData;
 }
 
-function convertOneOneXToOneTwoX(state, data) {
+function convertOneOneXToOneTwoZero(state, data) {
     /*
         This project is created with Snowball version 1.1.X.
         There is two updates needed:
         1. Merge tags with the same text (use text as ID).
         2. Update all paper tag records with the same text.
     */
-    console.log('[Compatibility][1.1.X → 1.2.X] Merging tags with duplicate text but different IDs.');
+    console.log('[Compatibility][1.1.X → 1.2.0] Merging tags with duplicate text but different IDs.');
     const newData = {
         version: state.version,
         projectPath: data.projectPath,
@@ -78,14 +78,49 @@ function convertOneOneXToOneTwoX(state, data) {
     return newData;
 }
 
+function convertOneTwoZeroToOneTwoX(state, data) {
+    /*
+        This project is created with Snowball version 1.2.0.
+        There is only one update needed:
+        1. Convert all paper IDs to lowercase.
+    */
+    console.log('[Compatibility][1.2.0 → 1.2.1] Converting all paper IDs to lowercase.');
+    const newData = {
+        version: state.version,
+        projectPath: data.projectPath,
+        sheets: data.sheets,
+        papers: data.papers,
+        tags: data.tags,
+    };
+
+    const newPapers = {};
+    Object.keys(newData.papers).forEach((paperId) => {
+        const newPaperId = paperId.toLowerCase();
+        newPapers[newPaperId] = newData.papers[paperId];
+        newPapers[newPaperId].id = newPaperId;
+    });
+    newData.papers = newPapers;
+
+    Object.keys(newData.sheets).forEach((sheetId) => {
+        const sheet = newData.sheets[sheetId];
+        sheet.papers = sheet.papers.map((paperId) => paperId.toLowerCase());
+    });
+
+    return newData;
+}
+
 export function convertFromOlderVersion(state, data) {
     let converted = data;
     if (!data.version) {
         converted = convertZeroOneXToOneOneX(state, converted);
     }
 
-    if (compare(data.version, '1.2.0', '<') && compare(state.version, '1.3.0', '<')) {
-        converted = convertOneOneXToOneTwoX(state, converted);
+    if (compare(data.version, '1.2.0', '<')) {
+        converted = convertOneOneXToOneTwoZero(state, converted);
+    }
+
+    if (compare(data.version, '1.2.0', '=')) {
+        converted = convertOneTwoZeroToOneTwoX(state, converted);
     }
 
     return converted;
@@ -99,7 +134,14 @@ export function checkCompatibility(state, data) {
         };
     }
 
-    if (compare(data.version, '1.2.0', '<') && compare(state.version, '1.3.0', '<')) {
+    if (compare(data.version, '1.2.0', '<')) {
+        return {
+            needConversion: true,
+            backwardsCompatible: true,
+        };
+    }
+
+    if (compare(data.version, '1.2.0', '=')) {
         return {
             needConversion: true,
             backwardsCompatible: true,
