@@ -12,27 +12,46 @@
         <template #title>
             {{ id ? 'Edit tag' : 'Create an automatic tag' }}
         </template>
-        <a-space direction="vertical">
-            <span v-if="!id && type === 'auto'">
-                This tag will be automatically added based on the search query.
-            </span>
-            <a-input v-model="tagText" placeholder="Enter a name for the tag" allow-clear />
+        <a-form>
+            <a-form-item v-if="!id && type === 'auto'">
+                This tag will be automatically added to papers if they match the search query.
+            </a-form-item>
 
-            <a-input v-if="type === 'auto'"
-                v-model="tagFilter" placeholder="Enter a search query here..." allow-clear
-            >
-                <template #prepend>
-                    <a-select
-                        :default-value="method"
-                        :trigger-props="{ autoFitPopupMinWidth: true }"
-                        @change="method = $event"
+            <a-form-item label="Name">
+                <a-input v-model="tagText" placeholder="Enter a name for the tag" allow-clear />
+            </a-form-item>
+
+            <a-form-item label="Query" v-if="type === 'auto'">
+                <a-input
+                    v-model="tagFilter" placeholder="Enter a search query here..." allow-clear
+                >
+                    <template #prepend>
+                        <a-select
+                            :default-value="method"
+                            :trigger-props="{ autoFitPopupMinWidth: true }"
+                            @change="method = $event"
+                        >
+                            <a-option>Boolean</a-option>
+                            <a-option>RegExp</a-option>
+                        </a-select>
+                    </template>
+                </a-input>
+            </a-form-item>
+
+            <a-form-item label="Color">
+                <a-space wrap style="max-width: 20rem">
+                    <a-tag v-for="(colorName, index) of colors" :key="index"
+                        style="cursor: pointer"
+                        :color="colorName"
+                        :bordered="tagColor === colorName"
+                        @click="tagColor = colorName"
                     >
-                        <a-option>Boolean</a-option>
-                        <a-option>RegExp</a-option>
-                    </a-select>
-                </template>
-            </a-input>
-        </a-space>
+                        <icon-check v-if="tagColor === colorName"/>
+                        {{ colorName }}
+                    </a-tag>
+                </a-space>
+            </a-form-item>
+        </a-form>
     </a-modal>
 </template>
 
@@ -49,6 +68,10 @@ export default {
             type: String,
             default: 'text',
         },
+        color: {
+            type: String,
+            default: 'blue',
+        },
         id: {
             type: String,
             default: undefined,
@@ -60,6 +83,21 @@ export default {
             method: 'Boolean',
             tagFilter: '',
             tagText: '',
+            tagColor: 'color',
+            colors: [
+                'red',
+                'orangered',
+                'orange',
+                'gold',
+                'lime',
+                'green',
+                'cyan',
+                'blue',
+                'purple',
+                'pinkpurple',
+                'magenta',
+                'gray',
+            ],
         };
     },
 
@@ -67,6 +105,7 @@ export default {
         visible() {
             this.tagFilter = this.filter;
             this.tagText = this.text;
+            this.tagColor = this.color;
         },
     },
 
@@ -80,6 +119,7 @@ export default {
                         text: this.tagText,
                         method: this.method,
                         filter: this.tagFilter,
+                        color: this.tagColor,
                     },
                 });
             } else {
