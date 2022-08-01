@@ -11,11 +11,11 @@
     <br />
     <br />
     <b>Download for </b>
-    <a href="https://github.com/shaunabanana/snowball/releases/download/v1.2.1/snowball-1.2.1-universal-mac.zip">macOS</a>
+    <a href="https://github.com/shaunabanana/snowball/releases/download/v1.3.0/snowball-1.3.0-universal-mac.zip">macOS</a>
     ·
-    <a href="https://github.com/shaunabanana/snowball/releases/download/v1.2.1/snowball.Setup.1.2.1.exe">Windows</a>
+    <a href="https://github.com/shaunabanana/snowball/releases/download/v1.3.0/snowball.Setup.1.3.0.exe">Windows</a>
     ·
-    <a href="https://github.com/shaunabanana/snowball/releases/tag/v1.2.1">Linux</a>
+    <a href="https://github.com/shaunabanana/snowball/releases/tag/v1.3.0">Linux</a>
     <br />
   </p>
 </p>
