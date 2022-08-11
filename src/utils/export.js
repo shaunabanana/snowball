@@ -34,7 +34,7 @@ export function exportRIS(state, paperIds) {
         const paper = state.papers[paperId];
         const record = { ...paper.record };
         if (paper.notes && paper.notes.length > 0) {
-            record.annote = `Notes: ${paper.notes}\n\n${record.annote}`;
+            record.note = paper.notes;
         }
         if (paper.tags && paper.tags.length > 0) {
             const tagNames = [];
