@@ -8,7 +8,7 @@
     > -->
     <a-tabs size="medium" editable show-add-button
         @add="newEmptySheet"
-        @delete="deleteSheet"
+        @delete="showWarning"
         :default-active-key="$store.state.activeSheet"
         :active-key="$store.state.activeSheet"
         @change="$store.commit('setActiveSheet', $event)"
@@ -62,6 +62,17 @@ export default {
             });
             console.log(`[PaperTabs][newEmptySheet] Setting active sheet to '${sheetId}'.`);
             this.$store.commit('setActiveSheet', sheetId);
+        },
+
+        showWarning(sheetId) {
+            this.$modal.warning({
+                title: `Delete "${this.$store.state.sheets[sheetId].name}"?`,
+                content: 'Papers contained only in this sheet will be deleted, along with your tags and notes. Papers that are also in other sheets will remain untouched.',
+                onOk: () => this.deleteSheet(sheetId),
+                hideCancel: false,
+                okText: 'Delete',
+                cancelText: 'Cancel',
+            });
         },
 
         deleteSheet(sheetId) {
