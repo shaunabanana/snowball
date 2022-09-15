@@ -23,6 +23,10 @@ Snowball lets you quickly find and filter through papers using the snowballing m
 <br/>
 <br/>
 
+> After using Snowball, you might consider using [Intrigue](https://github.com/shaunabanana/intrigue) to organize literature into writing📝
+> 
+> This app uses [bibliothecary](https://github.com/shaunabanana/bibliothecary) to implement the search function.
+
 ## How to use
 
 1. Start with a collection of papers. You can use a search engine like Web of Science or a reference manager like Zotero.
