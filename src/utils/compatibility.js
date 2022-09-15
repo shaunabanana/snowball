@@ -10,7 +10,7 @@ function convertZeroOneXToOneOneX(state, data) {
         3. Tags should be moved from inside papers to project level.
     */
     const newData = {
-        version: state.version,
+        version: '1.1.0',
         projectPath: data.projectPath,
         sheets: data.sheets,
         papers: {},
@@ -45,7 +45,7 @@ function convertZeroOneXToOneOneX(state, data) {
                 color: 'blue',
                 text: tagText,
             };
-                // Tags should be moved from inside papers to project level.
+            // Tags should be moved from inside papers to project level.
             paperTags.push(tagId);
             newData.tags[tagId] = tag;
         });
@@ -66,7 +66,7 @@ function convertOneOneXToOneTwoZero(state, data) {
     */
     console.log('[Compatibility][1.1.X → 1.2.0] Merging tags with duplicate text but different IDs.');
     const newData = {
-        version: state.version,
+        version: '1.2.0',
         projectPath: data.projectPath,
         sheets: data.sheets,
         papers: data.papers,
@@ -86,7 +86,7 @@ function convertOneTwoZeroToOneTwoX(state, data) {
     */
     console.log('[Compatibility][1.2.0 → 1.2.1] Converting all paper IDs to lowercase.');
     const newData = {
-        version: state.version,
+        version: '1.2.1',
         projectPath: data.projectPath,
         sheets: data.sheets,
         papers: data.papers,
@@ -115,13 +115,15 @@ export function convertFromOlderVersion(state, data) {
         converted = convertZeroOneXToOneOneX(state, converted);
     }
 
-    if (compare(data.version, '1.2.0', '<')) {
+    if (compare(converted.version, '1.2.0', '<')) {
         converted = convertOneOneXToOneTwoZero(state, converted);
     }
 
-    if (compare(data.version, '1.2.0', '=')) {
+    if (compare(converted.version, '1.2.0', '=')) {
         converted = convertOneTwoZeroToOneTwoX(state, converted);
     }
+
+    converted.version = state.version;
 
     return converted;
 }
