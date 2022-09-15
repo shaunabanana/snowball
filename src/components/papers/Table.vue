@@ -9,7 +9,7 @@
         :data="$store.getters.currentPapers"
         :row-selection="rowSelection"
         :selected-keys="$store.state.selection"
-        :virtual-list-props="{ height: height }"
+        :virtual-list-props="{ height: '100%' }"
         :pagination="false"
         :scroll="{ x: 980, y: '100%' }"
         @row-click="selectRow"
