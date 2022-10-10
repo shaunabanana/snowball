@@ -58,6 +58,7 @@ export function exportCSV(state, paperIds) {
     const papers = paperIds.map((paperId) => state.papers[paperId]);
     const csv = [
         [
+            'Decision',
             'Title',
             'Authors',
             'Abstract',
@@ -74,6 +75,7 @@ export function exportCSV(state, paperIds) {
     ];
     papers.forEach((paper) => {
         csv.push([
+            paper.decision,
             paper.title,
             formatAuthors(paper.authors),
             paper.abstract,
