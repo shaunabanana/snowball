@@ -15,8 +15,11 @@
   "main": "background.js",
   "dependencies": {
     "@arco-design/web-vue": "^2.30.2",
-    "@braks/vue-flow": "^0.4.40",
     "@spaceavocado/librarian": "^0.4.5",
+    "@vue-flow/background": "^1.0.0",
+    "@vue-flow/controls": "^1.0.0",
+    "@vue-flow/core": "^1.6.0",
+    "@vue-flow/minimap": "^1.0.0",
     "await-lock": "^2.2.2",
     "axios": "^0.27.2",
     "bibliothecary": "^1.0.3",
