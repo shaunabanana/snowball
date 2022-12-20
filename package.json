@@ -1,6 +1,6 @@
 {
   "name": "snowball",
-  "version": "1.4.1",
+  "version": "2.0.0",
   "private": true,
   "author": "Shengchen Zhang <shengchenzhang1207@gmail.com> (https://shengchen.design)",
   "scripts": {
