@@ -12,9 +12,21 @@
         </template>
         <a-row justify="center" style="margin-bottom: 2rem">
             <Avatar refreshable :size="100"
-                :seed="partiallyInitialized ? user.name + user.email + user.salt : user.salt"
+                :salt="user.salt"
+                :palette="user.palette"
                 @refresh="newIcon"
             />
+        </a-row>
+        <a-row justify="center" style="color: gray; font-size: 0.7rem; margin-bottom: 1rem;">
+            <span>
+                Your contact information is needed to use citation services such as CrossRef and
+                OpenAlex, and is also helpful when comparing inter-reviewer consistency
+                across projects.
+                <br />
+                The data is stored locally on your machine.
+                If you choose to distribute the project file, your name will become public,
+                but your email will not.
+            </span>
         </a-row>
         <a-row>
             <a-form :model="user" :style="{width:'600px'}" @submit="setIdentity">
@@ -40,7 +52,9 @@
 
 <script>
 import { nanoid } from 'nanoid';
+import colors from 'flat-palettes';
 import Avatar from '@/components/main/Avatar.vue';
+import useSnowballStore from '@/store';
 
 export default {
     name: 'ConfigIdentity',
@@ -48,6 +62,9 @@ export default {
         Avatar,
     },
     inject: ['config'],
+    setup: () => ({
+        store: useSnowballStore(),
+    }),
     props: {
         visible: Boolean,
     },
@@ -59,6 +76,7 @@ export default {
                 name: undefined,
                 email: undefined,
                 salt: nanoid(),
+                palette: undefined,
             },
         };
     },
@@ -77,12 +95,13 @@ export default {
         setIdentity({ errors }) {
             if (errors) return;
             this.config.set('user', this.user);
-            this.$store.commit('setUser', this.user);
+            this.store.user = this.user;
             this.$emit('confirm');
         },
 
         newIcon() {
             this.user.salt = nanoid();
+            this.user.palette = colors(5);
         },
     },
 
@@ -93,6 +112,7 @@ export default {
             this.user.name = userInfo.name;
             this.user.email = userInfo.email;
             this.user.salt = userInfo.salt;
+            this.user.palette = userInfo.palette;
         }
     },
 };

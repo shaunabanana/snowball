@@ -3,11 +3,20 @@
         <a-spin :loading="loading" tip="Running...">
             <a-card size="small" hoverable>
                 <template #extra>
-                    <a-button v-if="close" type="text" @click="$emit('delete')">
-                        <template #icon>
-                            <icon-close />
-                        </template>
-                    </a-button>
+                    <a-popconfirm type="warning"
+                        content="Are you sure you want to delete?"
+                        okText="Delete" cancelText="No"
+                        :ok-button-props="{
+                            status: 'danger'
+                        }"
+                        @ok="deleteNode"
+                    >
+                        <a-button v-if="close" type="text">
+                            <template #icon>
+                                <icon-close />
+                            </template>
+                        </a-button>
+                    </a-popconfirm>
                 </template>
                 <template #title>
                     <a-typography-title
@@ -19,43 +28,36 @@
                     </a-typography-title>
                 </template>
                 <a-space direction="vertical">
-                    <slot ref="internal" @loading="loading = $event"/>
+                    <slot ref="internal"/>
                     <a-divider orientation="left" :margin="5"/>
                     <a-textarea size="mini" placeholder="Notes" auto-size
-                        v-model="noteContent"
-                        @change="$store.commit('updateWorkflow', {
-                            element: id,
-                            updates: {
-                                notes: $event
-                            }
-                        })"
+                        style="min-width: 20rem;"
+                        :model-value="notes"
+                        @input="store.workflowNode(id).data.notes = $event"
+                        @keydown.stop
+                        @keyup.stop
+                        @mousedown.stop
+                        @mouseup.stop
                     />
                 </a-space>
             </a-card>
         </a-spin>
         <HandleList type="target" position="left" :handles="inputs"/>
         <HandleList type="source" position="right" :handles="outputs"/>
-        <!-- <Handle v-if="input && multiInput" id="input" type="target" class="port addport"
-            :position="Position.Left"
-        /> -->
-        <!-- <Handle v-if="output" id="output" type="source" :position="Position.Right" class="port"
-            :is-valid-connection="isValidConnection"
-        /> -->
     </div>
 </template>
 
 <script>
-// import { Position } from '@vue-flow/core';
+import useSnowballStore from '@/store';
+import writeProject from '@/utils/persistence';
 import HandleList from './components/HandleList.vue';
 
 export default {
     name: 'WorkflowNode',
     components: {
-        // Handle,
         HandleList,
     },
     emits: ['delete', 'change'],
-
     props: {
         id: String,
         title: String,
@@ -64,17 +66,28 @@ export default {
         close: Boolean,
         edit: Boolean,
         notes: String,
+        loading: {
+            type: Boolean,
+            default: false,
+        },
     },
-
-    data() {
-        return {
-            // Position,
-            loading: false,
-            noteContent: this.notes,
-        };
-    },
+    setup: () => ({
+        store: useSnowballStore(),
+    }),
 
     methods: {
+        deleteNode() {
+            this.store.workflow = this.store.workflow.filter(
+                (element) => (
+                    element.id !== this.id
+                    && element.source !== this.id
+                    && element.target !== this.id
+                ),
+            );
+            writeProject(this.store);
+            this.store.runWorkflow();
+        },
+
         isValidConnection(connection) {
             const edges = this.$store.state.workflow.filter(
                 (el) => el.source === connection.source && el.target === connection.target,
@@ -82,12 +95,6 @@ export default {
             return edges.length === 0;
         },
     },
-
-    // computed: {
-    //     inputs() {
-    //         return 0;
-    //     },
-    // },
 };
 </script>
 

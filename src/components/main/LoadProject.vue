@@ -51,12 +51,14 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { ipcRenderer } from 'electron';
 import { basename } from 'path';
-import { readProject, writeProject } from '@/utils/io';
+import { mapStores } from 'pinia';
+import { writeProject } from '@/utils/io';
 import { convertFromOlderVersion, checkCompatibility } from '@/utils/compatibility';
+
+import useSnowballStore from '@/store';
 
 export default {
     name: 'LoadProject',
-
     props: {
 
     },
@@ -79,12 +81,12 @@ export default {
             ipcRenderer.invoke('new-project').then((savePath) => {
                 if (!savePath) return;
                 this.setWindowTitle(savePath);
-                this.$store.commit('setProjectPath', {
-                    shouldInit: true,
-                    path: savePath,
+                ipcRenderer.invoke('create-project', savePath).then(() => {
+                    console.log('Successfully created project folders');
+                    this.store.projectPath = savePath;
+                    this.visible = false;
+                    this.$emit('done');
                 });
-                this.visible = false;
-                this.$emit('done');
             });
             // save({ filters: [{ name: '', extensions: ["snowball"] }] }).then((savePath) => {
             //     if (!savePath) return;
@@ -94,41 +96,55 @@ export default {
         },
 
         openProject() {
-            ipcRenderer.invoke('open-project').then((openPath) => {
-                if (!openPath || openPath.length === 0) return;
-                readProject(openPath[0]).then((projectData) => {
+            ipcRenderer.invoke('open-project').then((openPaths) => {
+                if (!openPaths || openPaths.length === 0) return;
+                const projectPath = openPaths[0];
+                ipcRenderer.invoke('read-project', projectPath).then((projectData) => {
+                // readProject(openPath[0]).then((projectData) => {
                     console.log(`[LoadProject][openProject] Project data version: ${projectData.version}`);
-                    const compatibility = checkCompatibility(this.$store.state, projectData);
-                    console.log(`[LoadProject][openProject] Compatibility: ${JSON.stringify(compatibility)}`);
-                    if (!compatibility.backwardsCompatible) {
-                        console.log('[LoadProject][openProject] The project file is created with an older version of Snowball. Asking for confirmation.');
-                        this.toConvert = projectData;
-                        this.backwardsCompatible = false;
-                        this.askUpgrade = true;
-                    } else if (compatibility.needConversion) {
-                        console.log('[LoadProject][openProject] The project file is created with an older version of Snowball. Asking for confirmation.');
-                        this.toConvert = projectData;
-                        this.backwardsCompatible = true;
-                        this.askUpgrade = true;
-                    } else {
-                        this.setWindowTitle(openPath[0]);
-                        this.$store.commit('setProjectPath', { path: openPath[0] });
-                        this.$store.commit('loadProject', projectData);
-                        this.$store.commit('setLoading', false);
-                        this.visible = false;
-                        this.$emit('done');
-                    }
+                    this.setWindowTitle(projectPath);
+                    Object.keys(projectData).forEach((key) => {
+                        console.log(key, projectData[key]);
+                        this.store[key] = projectData[key];
+                    });
+                    this.store.projectPath = projectPath;
+                    this.visible = false;
+                    this.$emit('done');
                 });
             });
+        },
+
+        handleCompatibility(projectPath, projectData) {
+            const compatibility = checkCompatibility(this.store, projectData);
+            console.log(`[LoadProject][openProject] Compatibility: ${JSON.stringify(compatibility)}`);
+            if (!compatibility.backwardsCompatible) {
+                console.log('[LoadProject][openProject] The project file is created with an older version of Snowball. Asking for confirmation.');
+                this.toConvert = projectData;
+                this.backwardsCompatible = false;
+                this.askUpgrade = true;
+            } else if (compatibility.needConversion) {
+                console.log('[LoadProject][openProject] The project file is created with an older version of Snowball. Asking for confirmation.');
+                this.toConvert = projectData;
+                this.backwardsCompatible = true;
+                this.askUpgrade = true;
+            } else {
+                this.setWindowTitle(projectPath);
+                this.store.projectPath = projectPath;
+                this.$store.commit('loadProject', projectData);
+                this.$store.commit('setLoading', false);
+                this.visible = false;
+                this.$emit('done');
+            }
         },
 
         convertAndLoad() {
             const converted = convertFromOlderVersion(this.$store.state, this.toConvert);
             this.setWindowTitle(converted.projectPath);
-            this.$store.commit('setProjectPath', { path: converted.projectPath });
+            this.store.projectPath = converted.projectPath;
+            // this.$store.commit('setProjectPath', { path: converted.projectPath });
             this.$store.commit('loadProject', converted);
-            writeProject(this.$store.state).then(() => {
-                this.$store.commit('setLoading', false);
+            writeProject(this.store).then(() => {
+                this.store.loading = false;
                 this.visible = false;
                 this.$emit('done');
             });
@@ -139,6 +155,7 @@ export default {
         selectedKeys() {
             return [this.item];
         },
+        store: mapStores(useSnowballStore).snowballStore,
     },
 };
 </script>

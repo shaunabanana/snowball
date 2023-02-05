@@ -15,6 +15,16 @@ export function formatAuthors(authors) {
     return '';
 }
 
+function unArray(array) {
+    if (!Array.isArray(array)) return array;
+    let result = array[0];
+    while (Array.isArray(result)) {
+        const [firstElement] = result;
+        result = firstElement;
+    }
+    return result;
+}
+
 function processCitationJs(fileContent, preprocess) {
     let toLoad = fileContent;
     if (preprocess) toLoad = fileContent.replace(/([^\\])\$/g, '$1\\$');
@@ -30,33 +40,23 @@ function processCitationJs(fileContent, preprocess) {
             title: record.title,
             authors: record.author ? record.author : [],
             abstract: record.abstract,
-            year: record.issued ? record.issued['date-parts'][0][0] : 'Unknown',
+            year: record.issued ? unArray(record.issued['date-parts']) : 'Unknown',
             keywords: record.keyword ? record.keyword.split(',').map((s) => s.trim()) : [],
             record: originalRecord,
         };
     });
 }
 
-export function processFile(file) {
-    const reader = new FileReader();
-
+export function processFile(content, preprocess) {
     return new Promise((resolve, reject) => {
-        reader.addEventListener('load', (event) => {
-            try {
-                const result = processCitationJs(
-                    event.target.result,
-                    file.name.endsWith('.bib'),
-                );
-                resolve(result);
-            } catch (error) {
-                reject(error);
-            }
-        });
-        reader.readAsText(file);
+        try {
+            const result = processCitationJs(
+                content,
+                preprocess,
+            );
+            resolve(result);
+        } catch (error) {
+            reject(error);
+        }
     });
-    // else if (file.name.endsWith(".xls") || file.name.endsWith(".xlsx")) {
-    //     readXlsxFile(files[0]).then((rows) => {
-    //         console.log(rows[0]);
-    //     });
-    // }
 }

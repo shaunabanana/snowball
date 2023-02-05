@@ -21,12 +21,12 @@
                         <Descriptions />
                     </a-card>
                 </a-col>
-                <a-col :span="8">
+                <a-col :span="10">
                     <a-card title="Statistics" :bordered="false" style="width: 100%; height: 100%">
                         <Statistics />
                     </a-card>
                 </a-col>
-                <a-col :span="8">
+                <a-col :span="6">
                     <a-card
                         title="Collaborators"
                         :bordered="false"
@@ -36,83 +36,50 @@
                     </a-card>
                 </a-col>
             </a-row>
-            <a-row :gutter="12" :wrap="false" style="flex-grow: 2; align-items: stretch">
-                <a-card
-                    title="Review history"
-                    :bordered="false"
-                    style="width: 100%; height: 100%"
-                >
-                    <template #extra>
-                        <a-link>Fullscreen</a-link>
-                    </template>
-                    Visualization coming soon!
-                </a-card>
-            </a-row>
-            <!-- <a-row :gutter="12" :wrap="false" style="flex-grow: 2; align-items: stretch">
+            <a-row ref="bottomRow"
+                style="flex-grow: 1; align-items: stretch"
+                :gutter="12" :wrap="false"
+            >
                 <a-col :span="16">
                     <a-card
-                        title="Review history"
+                        title="Project Notes"
+                        class="note-editor"
                         :bordered="false"
-                        style="width: 100%; height: 100%"
+                        :body-style="{
+                            width: 'calc(100% - 2rem)',
+                            height: `${bottomRowHeight - 80}px`,
+                            'overflow-y': 'hidden',
+                        }"
                     >
-                        <template #extra>
-                            <a-link>Fullscreen</a-link>
-                        </template>
-                        Card content
+                        <NoteEditor v-model="store.notes" @update:modelValue="saveNotes"/>
                     </a-card>
                 </a-col>
                 <a-col :span="8">
                     <a-card
-                        title="Unresolved Conversations"
+                        title="Recent Discussions"
                         :bordered="false"
-                        style="width: 100%; height: 100%"
+                        :body-style="{
+                            width: 'calc(100% - 2rem)',
+                            height: `${bottomRowHeight - 80}px`,
+                            'overflow-y': 'scroll',
+                        }"
                     >
-                        <template #extra>
-                            <a-link>More</a-link>
-                        </template>
-
-                        <a-list hoverable :bordered="false" :max-height="550">
-                            <a-list-item v-for="i of [1, 2, 3, 4, 5]" :key="i">
-                                <a-comment
-                                    align="right"
-                                    author="Socrates"
-                                    content="Comment body content."
-                                    datetime="in Zhang et al. (2021) Patterns..."
-                                >
-                                    <template #avatar>
-                                        <a-avatar>
-                                            <img
-                                                alt="avatar"
-                                                src="https://p1-arco.byteimg.com/tos-cn-i-uwbnlip3yd/3ee5f13fb09879ecb5185e440cef6eb9.png~tplv-uwbnlip3yd-webp.webp"
-                                            />
-                                        </a-avatar>
-                                    </template>
-                                    <a-comment
-                                        v-if="i === 5"
-                                        align="right"
-                                        avatar="https://p1-arco.byteimg.com/tos-cn-i-uwbnlip3yd/3ee5f13fb09879ecb5185e440cef6eb9.png~tplv-uwbnlip3yd-webp.webp"
-                                    >
-                                        <template #actions>
-                                            <a-button key="0" type="secondary"> Cancel </a-button>
-                                            <a-button key="1" type="primary"> Reply </a-button>
-                                        </template>
-                                        <template #content>
-                                            <a-input placeholder="Here is you content." />
-                                        </template>
-                                    </a-comment>
-                                </a-comment>
-                            </a-list-item>
-                        </a-list>
+                        <RecentComments />
                     </a-card>
                 </a-col>
-            </a-row> -->
+            </a-row>
         </a-layout>
     </a-layout>
 </template>
 
 <script>
+import useSnowballStore from '@/store';
+import writeProject from '@/utils/persistence';
+
+import RecentComments from '@/components/comments/RecentComments.vue';
 import Statistics from './Statistics.vue';
 import Descriptions from './Descriptions.vue';
+import NoteEditor from './NoteEditor.vue';
 import Collaborators from './Collaborators.vue';
 
 export default {
@@ -120,17 +87,35 @@ export default {
     components: {
         Statistics,
         Descriptions,
+        NoteEditor,
+        RecentComments,
         Collaborators,
     },
-
-    // props: {
-    //     data: Array,
-    // },
+    setup: () => ({
+        store: useSnowballStore(),
+    }),
 
     data() {
         return {
             title: 'Project Title',
+            bottomRowHeight: 0,
+            observer: null,
         };
+    },
+
+    mounted() {
+        this.observer = new ResizeObserver((entries) => {
+            entries.forEach((entry) => {
+                this.bottomRowHeight = entry.contentRect.height;
+            });
+        });
+        this.observer.observe(this.$refs.bottomRow.$el);
+    },
+
+    methods: {
+        saveNotes() {
+            writeProject(this.store);
+        },
     },
 };
 </script>
@@ -156,5 +141,10 @@ export default {
 }
 .action:hover {
     background: var(--color-fill-3);
+}
+
+.note-editor {
+    width: 100%;
+    height: 100%;
 }
 </style>

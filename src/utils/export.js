@@ -4,9 +4,8 @@ import { stringify } from 'csv-stringify/sync';
 
 import { formatAuthors } from '@/utils/import';
 
-export function exportBibTeX(state, paperIds) {
-    const papers = paperIds.map((paperId) => {
-        const paper = state.papers[paperId];
+export function exportBibTeX(papers) {
+    const exportPapers = papers.map((paper) => {
         const record = { ...paper.record };
         if (paper.notes && paper.notes.length > 0) {
             record.annote = [`Notes: ${paper.notes}`, record.annote];
@@ -20,18 +19,17 @@ export function exportBibTeX(state, paperIds) {
             } else if (paper.decision === 'undecided') {
                 tagNames.push('Undecided');
             }
-            paper.tags.forEach((tagId) => tagNames.push(state.tags[tagId].text));
+            paper.tags.forEach((tagId) => tagNames.push(tagId));
             record.annote = `Tags: ${tagNames.join(', ')}\n\n${record.annote}`;
         }
         return record;
     });
-    console.log(Cite(papers).format('bibtex'));
-    return Cite(papers).format('bibtex');
+    console.log(Cite(exportPapers).format('bibtex'));
+    return Cite(exportPapers).format('bibtex');
 }
 
-export function exportRIS(state, paperIds) {
-    const papers = paperIds.map((paperId) => {
-        const paper = state.papers[paperId];
+export function exportRIS(papers) {
+    const exportPapers = papers.map((paper) => {
         const record = { ...paper.record };
         if (paper.notes && paper.notes.length > 0) {
             record.note = paper.notes;
@@ -45,17 +43,16 @@ export function exportRIS(state, paperIds) {
             } else if (paper.decision === 'undecided') {
                 tagNames.push('Undecided');
             }
-            paper.tags.forEach((tagId) => tagNames.push(state.tags[tagId].text));
+            paper.tags.forEach((tagId) => tagNames.push(tagId));
             record.keyword = `${record.keyword},${tagNames.join(',')}`;
         }
         return record;
     });
-    console.log(Cite(papers).format('ris'));
-    return Cite(papers).format('ris');
+    console.log(Cite(exportPapers).format('ris'));
+    return Cite(exportPapers).format('ris');
 }
 
-export function exportCSV(state, paperIds) {
-    const papers = paperIds.map((paperId) => state.papers[paperId]);
+export function exportCSV(papers) {
     const csv = [
         [
             'Title',

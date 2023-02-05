@@ -2,14 +2,15 @@
     <a-row>
         <a-col :span="12">
             <a-space>
-                <a-button type="primary" :disabled="canSnowball" @click="$emit('snowball')">
-                    Snowball »
-                </a-button>
-                <a-dropdown v-if="$store.state.selection.length === 0"
-                    position="br"
-                    @select="$emit('export', $event)"
-                >
-                    <a-button>Export Sheet <icon-down/></a-button>
+                <a-dropdown position="br" @select="$emit('export', $event)" >
+                    <a-button>
+                        {{
+                            store.selection.length === 0
+                                ? 'Export Sheet'
+                                : `Export Selected`
+                        }}
+                        <icon-down/>
+                    </a-button>
                     <template #content>
                         <a-dgroup title="Reference Managers">
                             <a-doption value="RIS">RIS (Recommended)</a-doption>
@@ -20,29 +21,20 @@
                         </a-dgroup>
                     </template>
                 </a-dropdown>
-                <a-button-group v-if="$store.state.selection.length > 1">
-                    <a-button @click="$store.commit('updatePaper', {
-                        paper: $store.state.selection,
-                        updates: { decision: 'exclude' }
-                    })">
+                <a-button-group v-if="store.selection.length > 1">
+                    <a-button @click="updateSelectedDecisions('exclude')">
                         <template #icon>
                             <icon-close />
                         </template>
                         Exclude
                     </a-button>
-                    <a-button @click="$store.commit('updatePaper', {
-                        paper: $store.state.selection,
-                        updates: { decision: 'undecided' }
-                    })">
+                    <a-button @click="updateSelectedDecisions('undecided')">
                         <template #icon>
                             <icon-question />
                         </template>
                         Clear
                     </a-button>
-                    <a-button @click="$store.commit('updatePaper', {
-                        paper: $store.state.selection,
-                        updates: { decision: 'include' }
-                    })">
+                    <a-button @click="updateSelectedDecisions('include')">
                         <template #icon>
                             <icon-check />
                         </template>
@@ -50,17 +42,8 @@
                     </a-button>
                 </a-button-group>
 
-                <a-button v-if="$store.state.selection.length > 0"
-                    @click="newSheetFromSelected"
-                >
-                    <template #icon>
-                        <icon-plus />
-                    </template>
-                    To new sheet
-                </a-button>
-
-                <span v-if="$store.state.selection.length" style="color: var(--color-text-2)">
-                    {{$store.state.selection.length}} selected.
+                <span v-if="store.selection.length" style="color: var(--color-text-2)">
+                    {{store.selection.length}} selected.
                 </span>
             </a-space>
         </a-col>
@@ -86,9 +69,9 @@
                         </a-select>
                     </template>
                     <template #suffix>
-                        <span v-if="$store.state.filter.length > 0">
+                        <span v-if="store.filter.length > 0">
                             <span v-if="!syntaxError">
-                                {{this.$store.getters.currentPapers.length}} filtered.
+                                {{store.filteredPapers.length}} filtered.
                             </span>
 
                             <span v-else style="color: rgb(var(--red-6))">
@@ -113,6 +96,8 @@
 import Tutorial from '@/components/papers/Tutorial.vue';
 import TagModal from '@/components/tags/TagModal.vue';
 
+import useSnowballStore from '@/store';
+
 export default {
     name: 'PaperToolbar',
     components: {
@@ -120,6 +105,10 @@ export default {
         TagModal,
     },
     emits: ['snowball', 'export'],
+    setup: () => ({
+        store: useSnowballStore(),
+    }),
+
     data() {
         return {
             filter: '',
@@ -129,47 +118,35 @@ export default {
         };
     },
     computed: {
-        canSnowball() {
-            return this.$store.getters.currentPapers.every(
-                (paper) => paper.decision !== 'include',
-            );
-        },
-
         syntaxError() {
-            return this.$store.state.filterError && this.filter === this.$store.state.filter;
+            return this.store.filterError && this.filter === this.store.filter;
         },
     },
     methods: {
         filterPapers() {
-            this.$store.commit('setFilter', {
-                filter: this.filter,
-                method: this.method,
-                tagsOnly: false,
-            });
-            // this.filteredCount = this.$store.getters.currentPapers.length;
+            console.log('changing filters', this.filter, this.method);
+            this.store.filter = this.filter;
+            this.store.filterMethod = this.method;
+            this.store.filterTags = [];
+            this.store.filterChanged = true;
         },
 
         createFilterTag() {
             this.showModal = true;
         },
 
-        newSheetFromSelected() {
-            const sheetId = `layer-${Object.keys(this.$store.state.sheets).length}`;
-            const sheetName = `Layer ${Object.keys(this.$store.state.sheets).length}`;
-            console.log(`[Toolbar][newSheetFromSelected] Adding new sheet (${sheetId}) named '${sheetName}'.`);
-            this.$store.commit('addSheet', {
-                id: sheetId, name: sheetName, papers: this.$store.state.selection,
+        updateSelectedDecisions(decision) {
+            this.store.selection.forEach((paperId) => {
+                this.store.edit(this.store.activeSheet, paperId, { decision });
             });
-            console.log(`[Toolbar][newSheetFromSelected] Setting active sheet to '${sheetId}'.`);
-            this.$store.commit('setActiveSheet', sheetId);
         },
     },
     watch: {
-        '$store.state.filter': {
+        'store.filter': {
             deep: true,
             handler() {
-                this.filter = this.$store.state.filter;
-                this.filteredCount = this.$store.getters.currentPapers.length;
+                this.filter = this.store.filter;
+                this.filteredCount = this.store.currentPapers.length;
             },
         },
 
@@ -177,11 +154,7 @@ export default {
             console.log(`[Toolbar][Watch] Filtering method changed to '${this.method}'.`);
             if (this.filter.length > 0 && this.$store.state.filter === this.filter) {
                 console.log(`[Toolbar][Watch] Re-filtering with '${this.method}'.`);
-                this.$store.commit('setFilter', {
-                    filter: this.filter,
-                    method: this.method,
-                    tagsOnly: false,
-                });
+                this.filterPapers();
             }
         },
     },

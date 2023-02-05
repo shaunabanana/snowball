@@ -19,10 +19,20 @@
                 <icon-home />
                 Project
             </a-menu-item>
-            <a-menu-item key="screen">
-                <icon-scan />
-                Screen
+            <a-menu-item key="workflow">
+                <icon-branch />
+                Workflow
             </a-menu-item>
+            <a-tooltip content="Please add a sheet in Workflow first." position="right"
+                :disabled="store.workflow.filter(el => el.type === 'sheet').length > 0"
+            >
+                <a-menu-item key="screen"
+                    :disabled="store.workflow.filter(el => el.type === 'sheet').length === 0"
+                >
+                    <icon-scan />
+                    Screen
+                </a-menu-item>
+            </a-tooltip>
             <!-- <a-tooltip content="Functionality coming soon!" position="right">
                 <a-menu-item key="compare" disabled>
                     <icon-mind-mapping />
@@ -49,6 +59,7 @@
 
 <script>
 import { ref } from 'vue';
+import useSnowballStore from '@/store';
 
 export default {
     name: 'MainMenu',
@@ -61,11 +72,10 @@ export default {
         },
     },
 
-    setup() {
-        return {
-            collapsed: ref(true),
-        };
-    },
+    setup: () => ({
+        collapsed: ref(true),
+        store: useSnowballStore(),
+    }),
 
     methods: {
         onClickMenuItem(key) {

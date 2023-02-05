@@ -1,27 +1,27 @@
-/* eslint-disable object-curly-newline */
-import { createStore } from 'vuex';
-// import { compare } from 'compare-versions';
-
+import { defineStore } from 'pinia';
+import toposort from 'toposort';
 import { filter } from '@/utils/search';
-import { processTags, updateAutoTags, updateTagIds } from '@/utils/tags';
-// import convertFromOlderVersion from '@/utils/compatibility';
+// import { processTags, updateAutoTags, updateTagIds } from '@/utils/tags';
+import { processTags, updateTagIds } from '@/utils/tags';
+import writeProject from '@/utils/persistence';
 
-import filePersistence from '@/store/persistence';
-// import historyTracking from '@/store/history';
-
-export default createStore({
-    state: {
+export default defineStore('snowball', {
+    state: () => ({
+        initialized: false,
         version: null,
         projectPath: '',
-        sheets: {
-            core: {
-                id: 'core',
-                name: 'Core',
-                papers: [],
+        flow: null,
+        workflow: [
+            {
+                id: 'import-init', type: 'import', position: { x: 0, y: 0 }, data: {},
             },
+        ],
+        dataflow: {
+            input: {},
+            output: {},
         },
-        papers: {},
-        tags: {},
+        notes: '',
+        tags: [],
 
         user: {
             name: null,
@@ -31,8 +31,10 @@ export default createStore({
 
         loading: false,
 
+        screen: 'project',
+
         filter: '',
-        filterTags: false,
+        filterTags: [],
         filterMethod: 'Boolean',
         filterChanged: false,
         filterError: false,
@@ -41,255 +43,217 @@ export default createStore({
         activeSheet: 'core',
         activePaper: null,
         selection: [],
-    },
+    }),
     getters: {
+        workflowNode: (state) => (id) => state.workflow.find((el) => el.id === id),
+        allEdges: (state) => (
+            (id) => state.workflow.filter((el) => el.source === id || el.target === id)
+        ),
+        inEdges: (state) => (id) => state.workflow.filter((el) => el.target === id),
+        outEdges: (state) => (id) => state.workflow.filter((el) => el.source === id),
+        running(state) {
+            return state.workflow.some((element) => element.data && element.data.loading);
+        },
+
+        sheets(state) {
+            return state.workflow.filter((node) => node.type === 'sheet');
+        },
         currentSheet(state) {
-            if (!state.activeSheet) {
-                return {
-                    id: 'all',
-                    name: 'All',
-                    papers: Object.keys(state.papers),
-                };
-            }
-            return state.sheets[state.activeSheet];
+            return state.workflow.find((node) => node.type === 'sheet' && node.id === state.activeSheet);
+        },
+        paperInCurrentSheet() {
+            const getter = (id) => (
+                this.currentSheet.data.output.data.find((paper) => paper.id === id)
+            );
+            return getter.bind(this);
+        },
+
+        papers() {
+            const papers = [];
+            this.sheets.forEach((sheetNode) => {
+                if (!sheetNode.data.output || !sheetNode.data.output.data) return;
+                sheetNode.data.output.data.forEach((paper) => {
+                    if (!papers.includes(paper)) papers.push(paper);
+                });
+            });
+            return papers;
+        },
+        currentPaper() {
+            const activeSheetOutput = this.dataflow.output[this.activeSheet];
+            console.log(activeSheetOutput);
+            if (!activeSheetOutput || !activeSheetOutput.papers) return null;
+            return activeSheetOutput.papers.find(
+                (paper) => paper.id === this.activePaper,
+            );
+        },
+        included() {
+            return this.papers.filter((paper) => paper.decision === 'include');
+        },
+        excluded() {
+            return this.papers.filter((paper) => paper.decision === 'exclude');
+        },
+        undecided() {
+            return this.papers.filter((paper) => paper.decision === 'undecided');
+        },
+
+        tag: (state) => (id) => state.tags.find((tag) => tag.id === id),
+        tagUsageCount(state) {
+            const usage = {};
+            const { papers } = this;
+            console.log(this, this.papers, papers);
+            state.tags.forEach((tag) => {
+                usage[tag.id] = 0;
+            });
+            this.currentPapers.forEach((paper) => {
+                const tags = processTags(state, paper);
+                tags.forEach((tag) => {
+                    if (!usage[tag.id]) usage[tag.id] = 0;
+                    usage[tag.id] += 1;
+                });
+            });
+            console.log(usage);
+            return usage;
         },
 
         currentPapers(state) {
-            let currentPapers;
-            if (state.activeSheet) {
-                const currentSheet = state.sheets[state.activeSheet];
-                currentPapers = currentSheet.papers.map((id) => state.papers[id]);
-            } else {
-                currentPapers = Object.keys(state.papers).map((id) => state.papers[id]);
+            let currentPapers = [];
+            if (state.activeSheet && this.dataflow.output[state.activeSheet]) {
+                currentPapers = this.dataflow.output[state.activeSheet].papers;
+                if (this.dataflow.input[state.activeSheet]) {
+                    const { selection } = this.dataflow.input[state.activeSheet];
+                    if (selection && Array.isArray(selection)) {
+                        currentPapers = currentPapers.filter(
+                            (paper) => selection.includes(paper.id),
+                        );
+                    }
+                }
             }
+            return currentPapers || [];
+        },
 
-            if (state.filter.length === 0) {
+        filteredPapers(state) {
+            const papers = this.currentPapers;
+
+            if (state.filter.length === 0 && state.filterTags.length === 0) {
                 state.filterError = false;
-                return currentPapers;
+                return papers;
             }
             if (!state.filterChanged) {
                 state.filterError = false;
                 return state.filterResult;
             }
-            try {
-                state.filterResult = filter(
-                    state.filterMethod,
-                    currentPapers,
-                    state.filter,
-                    state.filterTags ? ['tags'] : ['title', 'abstract', 'keywords', 'tags'],
-                    {
-                        tags: (tags, paper) =>
-                            // eslint-disable-next-line implicit-arrow-linebreak
-                            processTags(state, paper)
-                                .map((tag) => tag.text)
-                                .join(' '),
-                    },
-                );
 
-                const newKeys = [];
-                state.filterResult.forEach((paper) => {
-                    if (state.selection.includes(paper.id)) {
-                        newKeys.push(paper.id);
-                    }
-                });
-                state.selection = newKeys;
-                state.filterChanged = false;
-                state.filterError = false;
-            } catch (error) {
-                state.filterError = true;
-                console.log(error);
+            state.filterResult = papers;
+            if (state.filter.length > 0) {
+                try {
+                    console.log('Trying to filter');
+                    state.filterResult = filter(
+                        state.filterMethod,
+                        papers,
+                        state.filter,
+                        ['title', 'abstract', 'keywords'],
+                    );
+                    state.filterError = false;
+                } catch (error) {
+                    state.filterError = true;
+                    console.log(error);
+                }
             }
+
+            console.log('Filter', state.filterResult.length, state.filterTags);
+
+            // If there are tags active, then filter those as well.
+            if (state.filterTags.length > 0) {
+                state.filterResult = state.filterResult.filter(
+                    (paper) => processTags(state, paper).some(
+                        (tag) => state.filterTags.includes(tag.id),
+                    ),
+                );
+            }
+
+            // Update selection to only include those filtered
+            const newKeys = [];
+            state.filterResult.forEach((paper) => {
+                if (state.selection.includes(paper.id)) {
+                    newKeys.push(paper.id);
+                }
+            });
+            state.selection = newKeys;
+
+            // Keep this result until the filter changes again.
+            state.filterChanged = false;
 
             return state.filterResult;
         },
-
-        decided(state) {
-            return Object.keys(state.papers).filter((paperId) => {
-                const paper = state.papers[paperId];
-                return paper.decision !== 'undecided';
-            }).map((paperId) => state.papers[paperId]);
-        },
-
-        included(state) {
-            return Object.keys(state.papers).filter((paperId) => {
-                const paper = state.papers[paperId];
-                return paper.decision === 'include';
-            }).map((paperId) => state.papers[paperId]);
-        },
-
-        excluded(state) {
-            return Object.keys(state.papers).filter((paperId) => {
-                const paper = state.papers[paperId];
-                return paper.decision === 'exclude';
-            }).map((paperId) => state.papers[paperId]);
-        },
-
-        tagUsageCount: (state) => (tagId) => Object.keys(state.papers).filter((paperId) => {
-            const paper = state.papers[paperId];
-            return paper.tags.includes(tagId);
-        }).length,
-
-        activeIncludedPapers(state) {
-            const currentSheet = state.sheets[state.activeSheet];
-            const currentPapers = currentSheet.papers.map((id) => state.papers[id]);
-            return currentPapers.filter((paper) => paper.decision === 'include');
-        },
     },
-    mutations: {
-        setUser(state, user) {
-            state.user = user;
+    actions: {
+        updateTags() {
+            updateTagIds(this);
+            // updateAutoTags(this, this.papers);
         },
 
-        setVersion(state, value) {
-            state.version = value;
-        },
-
-        setSelection(state, value) {
-            state.selection = value;
-        },
-
-        setFilter(state, payload) {
-            state.filter = payload.filter;
-            state.filterTags = payload.tagsOnly;
-            state.filterMethod = payload.method;
-            state.filterChanged = true;
-        },
-
-        setActiveSheet(state, value) {
-            state.activeSheet = value;
-            state.selection = [];
-            state.filterChanged = true;
-        },
-
-        setActivePaper(state, paperId) {
-            state.activePaper = paperId ? state.papers[paperId] : null;
-        },
-
-        setLoading(state, value) {
-            state.loading = value;
-        },
-
-        setProjectPath(state, payload) {
-            state.projectPath = payload.path;
-        },
-
-        loadProject(state, data) {
-            state.sheets = data.sheets;
-            state.papers = data.papers;
-            state.tags = data.tags;
-
-            updateAutoTags(state);
-        },
-
-        addPapers(state, payload) {
-            payload.papers.sort((a, b) => {
-                if (typeof a.year === 'number' && typeof b.year === 'number') {
-                    return b.year - a.year;
-                }
-                if (typeof a.year === 'string' && typeof b.year === 'number') {
-                    return 1;
-                }
-                if (typeof a.year === 'number' && typeof b.year === 'string') {
-                    return -1;
-                }
-                return 0;
-            });
-
-            payload.papers.forEach((paperData) => {
-                const paper = { ...paperData };
-
-                paper.tags = [];
-                paper.include = false;
-                paper.decision = 'undecided';
-                paper.notes = '';
-                // paper.comments = [];
-                paper.sheets = [];
-
-                if (!state.papers[paper.id]) {
-                    state.papers[paper.id] = paper;
-                    if (!state.sheets[payload.sheet].papers.includes(paper.id)) {
-                        state.sheets[payload.sheet].papers.push(paper.id);
-                    }
-                    if (!paper.sheets.includes(payload.sheet)) {
-                        paper.sheets.push(payload.sheet);
-                    }
-                }
-            });
-
-            updateAutoTags(state);
-        },
-
-        updatePaper(state, payload) {
-            let papers = payload.paper;
-            if (!Array.isArray(payload.paper)) {
-                papers = [payload.paper];
-            }
-            papers.forEach((paper) => {
-                if (!state.papers[paper]) return;
-                Object.entries(payload.updates).forEach(([key, value]) => {
-                    state.papers[paper][key] = value;
-                });
-                console.log(state.papers[paper].tags);
-            });
-        },
-
-        deletePaper(state, paperId) {
-            delete state.papers[paperId];
-        },
-
-        addTag(state, tag) {
-            state.tags[tag.id] = tag;
-            updateAutoTags(state);
-        },
-
-        updateTag(state, payload) {
-            let tags = payload.tag;
-            if (!Array.isArray(payload.tag)) {
-                tags = [payload.tag];
-            }
-            tags.forEach((tag) => {
-                if (!state.tags[tag]) return;
-                Object.entries(payload.updates).forEach(([key, value]) => {
-                    state.tags[tag][key] = value;
-                });
-            });
-            updateTagIds(state);
-        },
-
-        deleteTag(state, tag) {
-            delete state.tags[tag.id];
-            updateAutoTags(state);
-        },
-
-        addSheet(state, sheet) {
-            state.sheets[sheet.id] = {
-                id: sheet.id,
-                name: sheet.name,
-                papers: sheet.papers,
+        edit(sheetId, paperId, edits) {
+            const sheet = this.workflow.find((node) => node.type === 'sheet' && node.id === sheetId);
+            const output = this.dataflow.output[sheetId].papers;
+            if (!sheet) return;
+            console.log('Editing sheet', sheet);
+            sheet.data.edits[paperId] = {
+                ...sheet.data.edits[paperId],
+                ...edits,
             };
+            console.log('updated data', sheet.data.edits[paperId]);
+
+            // Apply the edits here to avoid having to rerun the node through all papers.
+            const paper = output.find((p) => p.id === paperId);
+            Object.keys(edits).forEach((key) => {
+                paper[key] = edits[key];
+            });
+            // Then we trigger the workflow after this node.
+            this.runWorkflow(sheetId);
+            // Finally, don't forget to save the edits since we're not running the node.
+            writeProject(this);
         },
 
-        updateSheet(state, payload) {
-            let sheets = payload.sheet;
-            if (!Array.isArray(payload.sheet)) {
-                sheets = [payload.sheet];
-            }
-            sheets.forEach((sheet) => {
-                if (!state.sheets[sheet]) return;
-                Object.entries(payload.updates).forEach(([key, value]) => {
-                    state.sheets[sheet][key] = value;
+        runWorkflow(elementId) {
+            this.workflow.forEach((el) => {
+                if (this.inEdges(el.id).length === 0 && this.dataflow.input[el.id]) {
+                    delete this.dataflow.input[el.id];
+                    if (el.data.run) el.data.run();
+                }
+            });
+
+            if (!elementId) {
+                console.log('No elementId specified. Running the entire workflow.');
+                const edges = [];
+                this.workflow.forEach((el) => {
+                    if (el.source && el.target) edges.push([el.source, el.target]);
                 });
+                const sorted = toposort(edges);
+                sorted.forEach((nodeId) => {
+                    const node = this.workflowNode(nodeId);
+                    console.log(node, node.data.run);
+                    if (node.data.run) node.data.run();
+                });
+                return;
+            }
+            console.log('Running workflow from ', elementId);
+            const outEdges = this.outEdges(elementId);
+            outEdges.forEach((edge) => {
+                const inEdges = this.inEdges(edge.target);
+                const outputs = {};
+                inEdges.forEach((inEdge) => {
+                    // Handles are in format "__type_id"
+                    const sourceHandle = inEdge.sourceHandle.replace(/^__/, '').split('_')[1];
+                    const targetHandle = inEdge.targetHandle.replace(/^__/, '').split('_')[1];
+                    if (this.dataflow.output[inEdge.sourceNode.id]) {
+                        const nodeOutput = this.dataflow.output[inEdge.sourceNode.id];
+                        outputs[targetHandle] = nodeOutput[sourceHandle];
+                    }
+                });
+                this.dataflow.input[edge.targetNode.id] = outputs;
+                const node = this.workflowNode(edge.targetNode.id);
+                if (node.data.run) node.data.run();
             });
         },
-
-        deleteSheet(state, sheet) {
-            delete state.sheets[sheet];
-        },
     },
-    actions: {},
-    modules: {},
-    plugins: [
-        filePersistence,
-        // historyTracking
-    ],
 });

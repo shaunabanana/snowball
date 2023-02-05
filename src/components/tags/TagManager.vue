@@ -3,6 +3,7 @@
         <a-popover v-for="tag in sortedTags" :key="tag.id" >
             <Tag
                 style="margin-top: 0.5rem"
+                :id="tag.id"
                 :color="tag.color"
                 :text="tag.text"
                 :additional="usageCount(tag.id)"
@@ -48,6 +49,7 @@
 <script>
 import Tag from '@/components/tags/Tag.vue';
 import TagModal from '@/components/tags/TagModal.vue';
+import useSnowballStore from '@/store';
 
 export default {
     name: 'TagManager',
@@ -55,11 +57,9 @@ export default {
         Tag,
         TagModal,
     },
-    props: {
-        tags: {
-            type: Object,
-        },
-    },
+    setup: () => ({
+        store: useSnowballStore(),
+    }),
 
     data() {
         return {
@@ -75,15 +75,51 @@ export default {
 
     computed: {
         sortedTags() {
-            const tags = [...Object.keys(this.tags).map((tagId) => this.tags[tagId])];
+            const defaultTags = [
+                {
+                    id: 'Included',
+                    type: 'builtin',
+                    color: 'green',
+                    text: 'Included',
+                },
+                {
+                    id: 'Excluded',
+                    type: 'builtin',
+                    color: 'gray',
+                    text: 'Excluded',
+                },
+                {
+                    id: 'Undecided',
+                    type: 'builtin',
+                    color: 'gray',
+                    text: 'Undecided',
+                },
+                {
+                    id: 'No DOI',
+                    type: 'builtin',
+                    color: 'red',
+                    text: 'No DOI',
+                },
+                {
+                    id: 'No Abstract',
+                    type: 'builtin',
+                    color: 'orange',
+                    text: 'No Abstract',
+                },
+            ];
+            const tags = [
+                ...this.store.tags,
+            ];
             tags.sort((a, b) => a.text.localeCompare(b.text));
-            return tags;
+            return defaultTags.concat(tags)
+                .filter((tag) => this.store.tagUsageCount[tag.id]);
         },
     },
 
     methods: {
         usageCount(tagId) {
-            return `${this.$store.getters.tagUsageCount(tagId)}`;
+            const count = this.store.tagUsageCount[tagId];
+            return `${count !== undefined ? count : 0}`;
         },
 
         editTag(tag) {
@@ -98,21 +134,15 @@ export default {
 
         deleteTag(tag) {
             if (tag.type === 'text') {
-                Object.keys(this.$store.state.papers).forEach((paperId) => {
-                    const paper = this.$store.state.papers[paperId];
+                this.store.papers.forEach((paper) => {
                     if (paper.tags.includes(tag.id)) {
-                        const newTags = paper.tags.filter((t) => t !== tag.id);
-                        this.$store.commit('updatePaper', {
-                            paper: paper.id,
-                            updates: {
-                                tags: newTags,
-                            },
-                            preventCommit: true,
-                        });
+                        // eslint-disable-next-line no-param-reassign
+                        paper.tags = paper.tags.filter((t) => t !== tag.id);
                     }
                 });
             }
-            this.$store.commit('deleteTag', tag);
+            this.store.tags = this.store.tags.filter((t) => t.id !== tag.id);
+            this.store.updateTags();
         },
     },
 };

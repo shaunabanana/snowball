@@ -6,9 +6,9 @@
         size="small"
         row-key="id"
         :bordered="false"
-        :data="$store.getters.currentPapers"
+        :data="store.filteredPapers"
         :row-selection="rowSelection"
-        :selected-keys="$store.state.selection"
+        :selected-keys="store.selection"
         :virtual-list-props="{ height: '100%' }"
         :pagination="false"
         :scroll="{ x: 980, y: '100%' }"
@@ -30,10 +30,7 @@
                         size="mini"
                         :model-value="record.decision"
                         :class="record.decision"
-                        @change="$store.commit('updatePaper', {
-                            paper: record.id,
-                            updates: { decision: $event }
-                        })"
+                        @change="store.edit(store.activeSheet, record.id, {decision: $event})"
                     >
                         <a-radio value="exclude">
                             <icon-close />
@@ -109,6 +106,7 @@
 import TagList from '@/components/tags/TagList.vue';
 
 import { formatAuthors } from '@/utils/import';
+import useSnowballStore from '@/store';
 
 export default {
     name: 'PaperTable',
@@ -124,6 +122,10 @@ export default {
             default: 400,
         },
     },
+
+    setup: () => ({
+        store: useSnowballStore(),
+    }),
 
     data() {
         return {
@@ -152,28 +154,29 @@ export default {
         },
 
         selectRow(record) {
-            this.$store.commit('setSelection', [record.id]);
+            this.store.selection = [record.id];
             this.updateActivePaper();
         },
 
         selectionChanged(keys) {
-            this.$store.commit('setSelection', keys);
+            this.store.selection = keys;
         },
 
         updateActivePaper() {
-            if (this.$store.state.selection.length === 1) {
-                this.$store.commit('setActivePaper', this.$store.state.selection[0]);
+            if (this.store.selection.length === 1) {
+                const [paperId] = this.store.selection;
+                this.store.activePaper = paperId;
             } else {
-                this.$store.commit('setActivePaper', null);
+                this.store.activePaper = null;
             }
         },
     },
 
-    watch: {
-        height() {
-            console.log(this.height);
-        },
-    },
+    // watch: {
+    //     height() {
+    //         console.log(this.height);
+    //     },
+    // },
 };
 </script>
 

@@ -70,10 +70,10 @@ function regexFilter(papers, query, fields, formatters) {
 
 export function filter(method, papers, query, fields, formatters) {
     if (method.toLowerCase() === 'boolean') {
-        return booleanFilter(papers, query, fields, formatters);
+        return booleanFilter(papers, query, fields, formatters || {});
     }
     if (method.toLowerCase() === 'regexp') {
-        return regexFilter(papers, query, fields, formatters);
+        return regexFilter(papers, query, fields, formatters || {});
     }
     return [];
 }

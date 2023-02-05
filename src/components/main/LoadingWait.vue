@@ -1,6 +1,6 @@
 <template>
     <a-modal
-        :visible="visible"
+        :visible="true"
         :closable="false"
         :simple="true"
         :mask-closable="false"
@@ -9,15 +9,16 @@
         <template #title>
             Please wait...
         </template>
-        <IconLoading spin /> Processing large datasets may take a while.
+        <IconLoading spin /> Snowball is loading your project and running the workflow.
     </a-modal>
 </template>
 
 <script>
 export default {
     name: 'LoadingWait',
-    props: {
-        visible: Boolean,
+
+    beforeUnmount() {
+        this.$emit('unmount');
     },
 };
 </script>

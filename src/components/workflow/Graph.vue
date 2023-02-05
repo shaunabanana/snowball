@@ -1,22 +1,22 @@
 <template>
-    <VueFlow ref="flow" v-model="store.workflow"
+    <VueFlow ref="flow" v-model="store.workflow" style="width: 100%; height: 100%;"
         :node-types="nodeTypes"
         :default-edge-options="{
-            type: 'smoothstep',
+            type: 'default',
             updatable: true,
-            style: {
-                strokeWidth: 2
-            }
+            style: edgeStyle
         }"
         :min-zoom="0.2"
         :max-zoom="1"
         :default-zoom="1"
         :fit-view-on-init="true"
         :snap-to-grid="true"
+        :delete-key-code="null"
+        :selection-key-code="null"
+        :multi-selection-key-code="null"
     >
         <Background :variant="BackgroundVariant.Lines" pattern-color="#eee" />
-        <Controls />
-        <MiniMap />
+        <MiniMap v-if="minimap"/>
     </VueFlow>
 </template>
 
@@ -24,15 +24,18 @@
 import { markRaw } from 'vue';
 import { VueFlow } from '@vue-flow/core';
 import { Background, BackgroundVariant } from '@vue-flow/background';
-import { Controls } from '@vue-flow/controls';
+// import { Controls } from '@vue-flow/controls';
 import { MiniMap } from '@vue-flow/minimap';
 
 import useSnowballStore from '@/store';
-import ImportPapersNode from './nodes/ImportPapers.vue';
+import ImportPapersNode from './nodes/Import.vue';
 import SheetNode from './nodes/Sheet.vue';
-import ExportSheetNode from './nodes/ExportSheet.vue';
+import ExportSheetNode from './nodes/Export.vue';
 import SnowballNode from './nodes/Snowball.vue';
 import MergeNode from './nodes/Merge.vue';
+import FilterNode from './nodes/Filter.vue';
+import TagNode from './nodes/Tag.vue';
+import ScriptNode from './nodes/Script.vue';
 
 // $emit('update:modelValue', $event)
 
@@ -41,7 +44,7 @@ export default {
     components: {
         VueFlow,
         Background,
-        Controls,
+        // Controls,
         MiniMap,
         // ImportPapersNode,
         // SheetNode,
@@ -54,6 +57,10 @@ export default {
             type: Boolean,
             default: false,
         },
+        minimap: {
+            type: Boolean,
+            default: true,
+        },
     },
     setup: () => ({
         store: useSnowballStore(),
@@ -62,13 +69,24 @@ export default {
         return {
             BackgroundVariant,
             nodeTypes: {
-                'import-papers': markRaw(ImportPapersNode),
+                import: markRaw(ImportPapersNode),
                 sheet: markRaw(SheetNode),
-                'export-sheet': markRaw(ExportSheetNode),
+                export: markRaw(ExportSheetNode),
                 merge: markRaw(MergeNode),
                 snowball: markRaw(SnowballNode),
+                filter: markRaw(FilterNode),
+                tag: markRaw(TagNode),
+                script: markRaw(ScriptNode),
             },
         };
+    },
+
+    computed: {
+        edgeStyle() {
+            return {
+                strokeWidth: 2,
+            };
+        },
     },
 };
 </script>
@@ -76,4 +94,10 @@ export default {
 <style>
 @import '@vue-flow/core/dist/style.css';
 @import '@vue-flow/core/dist/theme-default.css';
+
+.selected .arco-card {
+    border: 1px solid rgb(var(--primary-6));
+    /* margin-left: -0.5px;
+    margin-top: -0.5px; */
+}
 </style>

@@ -6,35 +6,30 @@
         @delete="deleteSheet"
         @change="$store.commit('setActiveSheet', $event)"
     > -->
-    <a-tabs size="medium" editable show-add-button
-        @add="newEmptySheet"
+    <a-tabs size="medium"
         @delete="showWarning"
-        :default-active-key="$store.state.activeSheet"
-        :active-key="$store.state.activeSheet"
-        @change="$store.commit('setActiveSheet', $event)"
+        :default-active-key="store.activeSheet"
+        :active-key="store.activeSheet"
+        @change="store.activeSheet = $event"
     >
-        <a-tab-pane :disabled="$store.getters.currentSheet.papers.length === 0"
+        <!-- <a-tab-pane :disabled="$store.getters.currentSheet.papers.length === 0"
             :closable="false"
         >
             <template #title><icon-star/>
                 All
                 ({{Object.keys($store.state.papers).length}})
             </template>
-        </a-tab-pane>
-        <a-tab-pane v-for="sheet of $store.state.sheets" :key="sheet.id"
-            :closable="sheet.id !== 'core'"
-        >
+        </a-tab-pane> -->
+        <a-tab-pane v-for="sheet of store.sheets" :key="sheet.id">
             <template #title>
                 <a-typography-paragraph
-                    v-model:editText="sheet.name"
+                    v-model:editText="sheet.data.name"
                     style="margin-bottom: 0"
-                    :editable="sheet.id !== 'core' && sheet.id === $store.state.activeSheet"
-                    @edit-end="$store.commit('updateSheet', {
-                        sheet: sheet.id,
-                        updates: { name: sheet.name }
-                    })"
+                    :editable="sheet.id !== 'core' && sheet.id === store.activeSheet"
+                    @edit-end="store.workflowNode(sheet.id).data.name = sheet.data.name"
                 >
-                    {{ sheet.name }} ({{sheet.papers.length}})
+                    <!-- {{ sheet.data.name }} ({{sheet.papers.length}}) -->
+                    {{ sheet.data.name }}
                 </a-typography-paragraph>
             </template>
         </a-tab-pane>
@@ -42,9 +37,14 @@
 </template>
 
 <script>
+import useSnowballStore from '@/store';
+
 export default {
     name: 'PaperTabs',
     components: {},
+    setup: () => ({
+        store: useSnowballStore(),
+    }),
 
     data() {
         return {
@@ -86,7 +86,7 @@ export default {
                         this.$store.commit('updatePaper', {
                             paper: paper.id,
                             updates: {
-                                tags: newSheets,
+                                sheets: newSheets,
                             },
                             preventCommit: true,
                         });
@@ -96,6 +96,12 @@ export default {
                 }
             });
             this.$store.commit('deleteSheet', sheetId);
+        },
+    },
+
+    computed: {
+        sheets() {
+            return this.$store.state.workflow.filter((el) => el.type === 'sheet');
         },
     },
 

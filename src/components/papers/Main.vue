@@ -8,15 +8,13 @@
                 <a-space direction="vertical" fill
                     style="height: 100%; padding-right: 1rem; margin-bottom: 1rem"
                 >
-                    <Toolbar @snowball="snowball" @export="exportSheet"/>
-                    <ScreeningView
-                        v-if="$store.getters.currentSheet.papers.length !== 0"
-                        :height="height"
-                    />
-                    <FileLoader
+                    <Toolbar/>
+
+                    <ScreeningView :height="height" />
+                    <!-- <FileLoader
                         v-if="$store.getters.currentSheet.papers.length === 0"
                         @import="addImportedPapers"
-                    />
+                    /> -->
                 </a-space>
             </a-layout-content>
             <!-- <a-layout-footer>Footer</a-layout-footer> -->
@@ -32,7 +30,7 @@ import { writeFile } from 'fs/promises';
 import Tabs from '@/components/papers/Tabs.vue';
 import Toolbar from '@/components/papers/Toolbar.vue';
 import ScreeningView from '@/components/papers/ScreeningView.vue';
-import FileLoader from '@/components/papers/FileLoader.vue';
+// import FileLoader from '@/components/papers/FileLoader.vue';
 
 import querySemanticScholar from '@/utils/literature';
 import { exportRIS, exportBibTeX, exportCSV } from '@/utils/export';
@@ -43,7 +41,7 @@ export default {
         Tabs,
         Toolbar,
         ScreeningView,
-        FileLoader,
+        // FileLoader,
     },
 
     // props: {

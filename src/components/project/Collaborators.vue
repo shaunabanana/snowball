@@ -1,56 +1,59 @@
 <template>
     <a-space wrap>
-        <!-- <Avatar v-for="person in collaborators" :key="person.name"
-            :seed="getSeed(person)"
-            :tooltip="getTooltip(person)"
-        /> -->
-        Coming soon!
+        <Avatar v-for="person in collaborators" :key="fingerprint(person)"
+            :tooltip="person.name"
+            :salt="person.salt"
+            :palette="person.palette"
+        />
     </a-space>
 </template>
 
 <script>
-// import Avatar from '@/components/main/Avatar.vue';
-// import { gatherRepository } from '@/utils/git';
+import useSnowballStore from '@/store';
+import Avatar from '@/components/main/Avatar.vue';
 
 export default {
     name: 'ProjectCollaborators',
     components: {
-        // Avatar
+        Avatar,
     },
-
-    data() {
-        return {
-            collaborators: [],
-        };
-    },
+    setup: () => ({
+        store: useSnowballStore(),
+    }),
 
     methods: {
-        getSeed(person) {
-            const { user } = this.$store.state;
-            if (user.name && user.email && user.salt) {
-                if (user.name === person.name) {
-                    return user.name + user.email + user.salt;
-                }
-            }
-            return person.name + person.email;
-        },
-
-        getTooltip(person) {
-            const { user } = this.$store.state;
-            if (user.name && user.email && user.salt) {
-                if (user.name === person.name) {
-                    return `${user.name} (Me)`;
-                }
-            }
-            return person.name;
+        fingerprint(person) {
+            return person.palette
+                ? person.name + person.salt + person.palette.join('')
+                : person.name + person.salt;
         },
     },
 
-    mounted() {
-        // gatherRepository(this.$store.state).then((repo) => {
-        //     this.collaborators = repo.authors;
-        //     console.log(this.collaborators);
-        // });
+    computed: {
+
+        collaborators() {
+            const collaborators = [
+                this.store.user,
+            ];
+            const existing = new Set([
+                this.fingerprint(this.store.user),
+            ]);
+
+            this.store.sheets.forEach((sheet) => {
+                const output = this.store.dataflow.output[sheet.id];
+                if (!output || !output.papers) return;
+                output.papers.forEach((paper) => {
+                    if (paper.comments.length === 0) return;
+                    paper.comments.forEach((comment) => {
+                        const fingerprint = this.fingerprint(comment.author);
+                        if (!existing.has(fingerprint)) collaborators.push(comment.author);
+                        existing.add(fingerprint);
+                    });
+                });
+            });
+
+            return collaborators;
+        },
     },
 };
 </script>

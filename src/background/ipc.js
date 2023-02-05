@@ -50,6 +50,13 @@ ipcMain.handle('open-project', () => {
     return projectPath;
 });
 
+ipcMain.handle('open-file', () => {
+    const projectPath = dialog.showOpenDialogSync({
+        properties: ['openFile'],
+    });
+    return projectPath;
+});
+
 ipcMain.handle('export', (event, format) => {
     const filePath = dialog.showSaveDialogSync({
         filters: [{ name: 'Export file', extensions: [format] }],

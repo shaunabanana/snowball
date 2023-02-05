@@ -1,3 +1,4 @@
+/* eslint-disable no-param-reassign */
 /* eslint-disable import/no-extraneous-dependencies */
 import { join } from 'path';
 import { mkdirSync, rmdirSync, existsSync } from 'fs';
@@ -12,13 +13,14 @@ export async function writeIndex(projectData) {
     const indexPath = join(projectData.projectPath, `index${FORMAT}`);
     const indexData = {
         version: projectData.version,
-        sheets: Object.keys(projectData.sheets).map((key) => ({
-            id: key,
-            name: projectData.sheets[key].name,
-        })),
-        papers: Object.keys(projectData.papers),
         tags: { ...projectData.tags },
+        workflow: structuredClone(projectData.workflow),
     };
+    indexData.workflow.forEach((workflow) => {
+        if (workflow.type === 'smoothstep') return;
+        if (workflow.data && workflow.data.input) delete workflow.data.input;
+        if (workflow.data && workflow.data.output) delete workflow.data.output;
+    });
     await writeFile(indexPath, stringify(indexData), {
         encoding: 'utf8',
     });
@@ -119,13 +121,16 @@ export function readProject(path) {
         const projectData = {
             version: undefined,
             projectPath: path,
+            workflow: [],
             sheets: {},
             papers: {},
             tags: [],
         };
         // Read index
         readIndex(path).then((indexData) => {
+            console.log(indexData);
             projectData.version = indexData.version;
+            projectData.workflow = indexData.workflow || [];
             projectData.tags = indexData.tags;
 
             // Read sheets

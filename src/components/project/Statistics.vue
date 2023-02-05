@@ -1,34 +1,51 @@
 <template>
     <a-space size="large" fill>
-        <a-statistic title="Total" :value="totalCount" />
-        <a-statistic title="Included" :value="includedCount" />
-        <a-statistic title="Decisions made" :value="decisionRatio">
+        <a-statistic title="Unique papers" :value="statistics.total" />
+        <a-statistic title="Viewed" :value="statistics.viewed" />
+        <a-statistic title="Included" :value="statistics.included" />
+        <a-statistic title="Decisions made" :value="statistics.decisionRatio">
             <template #suffix>
-                % ({{decidedCount}} / {{totalCount}})
+                % ({{statistics.decided}} / {{statistics.total}})
             </template>
         </a-statistic>
     </a-space>
 </template>
 
 <script>
+import useSnowballStore from '@/store';
+
 export default {
     name: 'ProjectStatistics',
+    setup: () => ({
+        store: useSnowballStore(),
+    }),
     computed: {
-        includedCount() {
-            return this.$store.getters.included.length;
-        },
+        statistics() {
+            const total = new Set();
+            const included = new Set();
+            const decided = new Set();
+            const viewed = new Set();
 
-        decidedCount() {
-            return this.$store.getters.decided.length;
-        },
+            this.store.sheets.forEach((sheet) => {
+                const output = this.store.dataflow.output[sheet.id];
+                if (!output || !output.papers) return;
+                output.papers.forEach((paper) => {
+                    total.add(paper.id);
+                    if (paper.decision !== 'undecided') decided.add(paper.id);
+                    if (paper.decision === 'include') included.add(paper.id);
+                    if (sheet.data.edits[paper.id]) viewed.add(paper.id);
+                });
+            });
 
-        totalCount() {
-            return Object.keys(this.$store.state.papers).length;
-        },
+            const ratio = Math.ceil((decided.size / total.size) * 100);
 
-        decisionRatio() {
-            const ratio = Math.ceil((this.decidedCount / this.totalCount) * 100);
-            return ratio || 0;
+            return {
+                total: total.size,
+                included: included.size,
+                decided: decided.size,
+                viewed: viewed.size,
+                decisionRatio: ratio || 0,
+            };
         },
     },
 };

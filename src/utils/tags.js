@@ -4,6 +4,7 @@ export function processTags(state, paper) {
     const builtinTags = [];
     if (paper.decision === 'include') {
         builtinTags.push({
+            id: 'Included',
             type: 'builtin',
             color: 'green',
             text: 'Included',
@@ -11,6 +12,7 @@ export function processTags(state, paper) {
     }
     if (paper.decision === 'exclude') {
         builtinTags.push({
+            id: 'Excluded',
             type: 'builtin',
             color: 'gray',
             text: 'Excluded',
@@ -18,6 +20,7 @@ export function processTags(state, paper) {
     }
     if (paper.decision === 'undecided') {
         builtinTags.push({
+            id: 'Undecided',
             type: 'builtin',
             color: 'gray',
             text: 'Undecided',
@@ -25,6 +28,7 @@ export function processTags(state, paper) {
     }
     if (!paper.doi) {
         builtinTags.push({
+            id: 'No DOI',
             type: 'builtin',
             color: 'red',
             text: 'No DOI',
@@ -32,6 +36,7 @@ export function processTags(state, paper) {
     }
     if (!paper.abstract) {
         builtinTags.push({
+            id: 'No Abstract',
             type: 'builtin',
             color: 'orange',
             text: 'No Abstract',
@@ -39,15 +44,14 @@ export function processTags(state, paper) {
     }
 
     // Convert tag IDs to tag objects, and filter out undefined ones.
-    const paperTags = paper.tags.map((tag) => state.tags[tag]).filter((t) => t);
+    const paperTags = paper.tags.map((tagId) => state.tag(tagId)).filter((t) => t);
     paperTags.sort((a, b) => a.text.localeCompare(b.text));
     return builtinTags.concat(paperTags);
 }
 
-export function updateAutoTags(state) {
-    const papers = Object.keys(state.papers).map((paperId) => state.papers[paperId]);
-    Object.keys(state.tags).forEach((tagId) => {
-        const tag = state.tags[tagId];
+export function updateAutoTags(state, papers) {
+    // const papers = Object.keys(state.papers).map((paperId) => state.papers[paperId]);
+    state.tags.forEach((tag) => {
         if (tag.type !== 'auto') return;
         const result = filter(
             tag.method,
@@ -63,39 +67,51 @@ export function updateAutoTags(state) {
             },
         );
         result.forEach((paper) => {
-            if (!paper.tags.includes(tagId)) paper.tags.push(tagId);
+            if (!paper.tags.includes(tag.id)) paper.tags.push(tag.id);
         });
     });
 
-    Object.keys(state.papers).forEach((paperId) => {
-        const paper = state.papers[paperId];
+    papers.forEach((paper) => {
+        // eslint-disable-next-line no-param-reassign
         paper.tags = paper.tags.filter((tagId) => state.tags[tagId]);
     });
 }
 
 export function updateTagIds(state) {
-    // Merge tags with the same text (use text as ID).
-    const newTags = {};
-    Object.keys(state.tags).forEach((tagId) => {
-        const tag = state.tags[tagId];
+    // Create a mapping between old ids and new ids
+    const mergedTags = [];
+    const existingTags = [];
+    const idMap = {};
+    state.tags.forEach((tag) => {
         if (tag.type === 'text') {
+            idMap[tag.id] = tag.text;
+            // eslint-disable-next-line no-param-reassign
             tag.id = tag.text;
         }
-        newTags[tag.id] = tag;
+        if (!existingTags.includes(tag.id)) {
+            existingTags.push(tag.id);
+            mergedTags.push(tag);
+        }
     });
 
-    // Update all paper tag records with the same text.
-    Object.keys(state.papers).forEach((paperId) => {
-        const paper = state.papers[paperId];
-        const newPaperTags = new Set(paper.tags.map((tid) => {
-            const tag = state.tags[tid];
-            if (tag.type === 'text') {
-                return state.tags[tid].text;
+    // Update all paper tag records, merging the ones with the same text.
+    state.sheets.forEach((sheet) => {
+        if (!sheet.data.edits) return;
+        Object.keys(sheet.data.edits).forEach((paperId) => {
+            const edits = sheet.data.edits[paperId];
+            if (edits.tags) {
+                // console.log(paperId, edits.tags);
+                const newPaperTags = new Set(edits.tags.map((tagId) => {
+                    console.log(tagId, idMap[tagId]);
+                    if (idMap[tagId]) return idMap[tagId];
+                    return tagId;
+                }));
+                newPaperTags.delete(null);
+                // console.log(newPaperTags);
+                edits.tags = [...newPaperTags];
             }
-            return tid;
-        }));
-        paper.tags = [...newPaperTags];
+        });
     });
 
-    state.tags = newTags;
+    state.tags = mergedTags;
 }

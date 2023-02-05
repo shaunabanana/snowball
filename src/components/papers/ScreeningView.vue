@@ -20,7 +20,7 @@
                     </template>
                     <template #second>
                         <div style="padding: 0.5rem">
-                            <TagManager :tags="$store.state.tags"/>
+                            <TagManager />
                         </div>
                     </template>
                 </a-split>
@@ -37,6 +37,8 @@ import Table from '@/components/papers/Table.vue';
 import PaperDetails from '@/components/papers/PaperDetails.vue';
 import TagManager from '@/components/tags/TagManager.vue';
 
+import useSnowballStore from '@/store';
+
 export default {
     name: 'ScreeningView',
     components: {
@@ -44,10 +46,12 @@ export default {
         PaperDetails,
         TagManager,
     },
-
     props: {
         height: Number,
     },
+    setup: () => ({
+        store: useSnowballStore(),
+    }),
 
     data() {
         return {
@@ -57,10 +61,10 @@ export default {
     },
 
     watch: {
-        '$store.state.activePaper': {
+        'store.activePaper': {
             deep: true,
             handler() {
-                if (this.$store.state.activePaper) {
+                if (this.store.activePaper) {
                     if (this.detailsSplitRatio === 1) this.detailsSplitRatio = 0.7;
                 } else {
                     this.detailsSplitRatio = 1;

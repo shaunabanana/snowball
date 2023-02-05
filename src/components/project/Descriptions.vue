@@ -29,19 +29,22 @@
 import { dirname } from 'path';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { ipcRenderer } from 'electron';
+import useSnowballStore from '@/store';
 
 export default {
     name: 'ProjectDescriptions',
-
+    setup: () => ({
+        store: useSnowballStore(),
+    }),
     computed: {
         location() {
-            return dirname(this.$store.state.projectPath);
+            return dirname(this.store.projectPath);
         },
     },
 
     methods: {
         openLocation() {
-            ipcRenderer.send('show-file', `${this.$store.state.projectPath}`);
+            ipcRenderer.send('show-file', `${this.store.projectPath}`);
         },
     },
 };

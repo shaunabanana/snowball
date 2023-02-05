@@ -1,29 +1,43 @@
 <template>
-    <Node title="Snowball" input output close :id="id" :notes="data.notes" @delete="deleteNode">
+    <Node title="Snowball" close
+        :id="id"
+        :loading="data.loading"
+        :inputs="[
+            { id: 'papers', type: 'papers', text: 'Papers', class: 'data' },
+            {
+                id: 'selection', type: 'papers',
+                text: 'Selection: Only snowball from specific papers'
+            },
+        ]"
+        :outputs="[
+            { id: 'papers', type: 'papers', text: 'New papers', class: 'data' },
+        ]"
+        :notes="data.notes"
+    >
         <a-space direction="vertical">
             <a-descriptions size="small" :column="1">
-                <a-descriptions-item label="Snowball-able papers">
+                <a-descriptions-item label="Source papers">
                     {{ data.input ? snowballPapers.length : 'N/A' }}
                 </a-descriptions-item>
                 <a-descriptions-item label="New papers found">
                     {{ data.output ? data.output.length : 'N/A' }}
                 </a-descriptions-item>
-            </a-descriptions>
 
-            <a-space direction="vertical" fill>
-                <a-button size="small" type="primary" long
-                    :disabled="!data.input"
-                    @click="doSnowball"
-                >
-                    Run
-                </a-button>
-            </a-space>
+                <a-descriptions-item label="Forward citations">
+                    <a-switch size="small" type="round"/>
+                </a-descriptions-item>
+
+                <a-descriptions-item label="Backward citations">
+                    <a-switch size="small" type="round"/>
+                </a-descriptions-item>
+            </a-descriptions>
         </a-space>
     </Node>
 </template>
 
 <script>
-import { queryOpenAlex } from '@/utils/literature';
+import useSnowballStore from '@/store';
+// import { queryOpenAlex } from '@/utils/literature';
 import Node from './Node.vue';
 
 export default {
@@ -31,32 +45,70 @@ export default {
     components: {
         Node,
     },
+    setup: () => ({
+        store: useSnowballStore(),
+    }),
 
     props: {
         id: String,
         data: Object,
     },
 
+    mounted() {
+        const nodeData = this.store.workflowNode(this.id).data;
+        nodeData.run = this.handleInput.bind(this);
+        if (!this.data.forward) {
+            nodeData.forward = true;
+        }
+        if (!this.data.backward) {
+            nodeData.forward = true;
+        }
+        if (!this.data.limit) {
+            nodeData.limit = ['keywords', ''];
+        }
+        if (!this.data.sort) {
+            nodeData.sort = ['keywords', ''];
+        }
+        this.worker = new Worker(new URL('./workers/snowball.js', import.meta.url));
+        this.handleInput();
+    },
+
     methods: {
-        doSnowball() {
+        handleInput() {
+            const nodeData = this.store.workflowNode(this.id).data;
+            const workflowInput = this.store.dataflow.input[this.id];
             if (
-                !this.data.input
-                    || !Array.isArray(this.data.input)
-                    || this.data.input.length === 0
-            ) return;
+                !workflowInput
+                || !workflowInput.papers
+            ) {
+                this.papers = [];
+                this.store.dataflow.output[this.id] = {};
+                this.store.runWorkflow(this.id);
+                return;
+            }
 
-            const input = this.data.input[0].concat(...this.data.input.slice(1));
+            nodeData.loading = true;
 
-            this.$emit('loading', true);
+            console.log(workflowInput);
 
-            // Do things
-            // const inputIds = input.map((paper) => paper.id);
-            const includedPapers = input.filter(
-                (paper) => paper.decision === 'include' && paper.doi,
-            );
+            let selectedPapers = workflowInput.papers;
+            // If selection is specified, then filter input data using
+            if (workflowInput.selection && workflowInput.selection.length > 0) {
+                selectedPapers = selectedPapers.filter(
+                    (paper) => workflowInput.selection.includes(paper.id),
+                );
+            }
 
-            const includedIds = includedPapers.map((paper) => paper.doi);
-            queryOpenAlex(includedIds, this.$store.state.user);
+            console.log(selectedPapers);
+
+            // // Do things
+            // // const inputIds = input.map((paper) => paper.id);
+            // const includedPapers = input.filter(
+            //     (paper) => paper.decision === 'include' && paper.doi,
+            // );
+
+            // const includedIds = includedPapers.map((paper) => paper.doi);
+            // queryOpenAlex(includedIds, this.$store.state.user);
 
             // const newPapers = [];
             // Promise.all(
@@ -84,10 +136,6 @@ export default {
             //     });
             //     this.$store.commit('triggerWorkflow', this.id);
             // });
-        },
-
-        deleteNode() {
-
         },
     },
 

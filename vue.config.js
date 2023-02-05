@@ -1,4 +1,6 @@
 const { defineConfig } = require('@vue/cli-service');
+// eslint-disable-next-line import/no-extraneous-dependencies
+const webpack = require('webpack');
 
 module.exports = defineConfig({
     transpileDependencies: true,
@@ -6,6 +8,13 @@ module.exports = defineConfig({
         experiments: {
             topLevelAwait: true,
         },
+        plugins: [
+            // fix "process is not defined" error:
+            // (do "npm install process" before running the build)
+            new webpack.ProvidePlugin({
+                process: 'process/browser',
+            }),
+        ],
     },
     pluginOptions: {
         electronBuilder: {

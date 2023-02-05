@@ -40,7 +40,7 @@
 
             <a-form-item label="Color">
                 <a-space wrap style="max-width: 20rem">
-                    <a-tag v-for="(colorName, index) of colors" :key="index"
+                    <a-tag v-for="colorName of colors" :key="colorName"
                         style="cursor: pointer"
                         :color="colorName"
                         :bordered="tagColor === colorName"
@@ -56,6 +56,8 @@
 </template>
 
 <script>
+import useSnowballStore from '@/store';
+
 export default {
     props: {
         visible: Boolean,
@@ -77,6 +79,9 @@ export default {
             default: undefined,
         },
     },
+    setup: () => ({
+        store: useSnowballStore(),
+    }),
 
     data() {
         return {
@@ -112,18 +117,14 @@ export default {
     methods: {
         saveTag() {
             if (this.id) {
-                this.$store.commit('updateTag', {
-                    tag: this.id,
-                    updates: {
-                        type: this.type,
-                        text: this.tagText,
-                        method: this.method,
-                        filter: this.tagFilter,
-                        color: this.tagColor,
-                    },
-                });
+                const tag = this.store.tag(this.id);
+                tag.type = this.type;
+                tag.text = this.tagText;
+                tag.method = this.method;
+                tag.filter = this.tagFilter;
+                tag.color = this.tagColor;
             } else {
-                this.$store.commit('addTag', {
+                this.store.tag.push({
                     id: this.tagText,
                     type: this.type,
                     color: 'purple',
@@ -132,6 +133,8 @@ export default {
                     filter: this.tagFilter,
                 });
             }
+            this.store.updateTags();
+            this.store.runWorkflow();
             this.close();
         },
 
