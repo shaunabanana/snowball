@@ -88,6 +88,7 @@ function handleInput({
     // Separate the merged result into different ports according to original input data
     paperHandles.forEach((handle, index) => {
         const port = `port${index}`;
+        if (!input[port]) return;
         const inputIds = input[port].map((p) => p.id);
         const portOutput = [];
         all.forEach((paper) => {

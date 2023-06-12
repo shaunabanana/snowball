@@ -32,14 +32,14 @@
             </a-button>
         </a-button-group>
 
-        <a-tooltip content="Coming soon!">
-            <a-button-group size="small" disabled>
+        <!-- <a-tooltip content="Coming soon!"> -->
+            <a-button-group size="small">
                 <a-button @click="$emit('create', 'snowball')">
                     <template #icon><icon-play-arrow /></template>
                     Snowball
                 </a-button>
             </a-button-group>
-        </a-tooltip>
+        <!-- </a-tooltip> -->
 
         <!-- <a-button-group size="small">
             <a-button @click="$emit('create', 'script')">

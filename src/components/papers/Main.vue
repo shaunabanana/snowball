@@ -32,7 +32,6 @@ import Toolbar from '@/components/papers/Toolbar.vue';
 import ScreeningView from '@/components/papers/ScreeningView.vue';
 // import FileLoader from '@/components/papers/FileLoader.vue';
 
-import querySemanticScholar from '@/utils/literature';
 import { exportRIS, exportBibTeX, exportCSV } from '@/utils/export';
 
 export default {
@@ -60,33 +59,6 @@ export default {
             this.$store.commit('addPapers', {
                 sheet: this.$store.state.activeSheet,
                 papers,
-            });
-        },
-
-        snowball() {
-            this.$store.commit('setLoading', true);
-            const sourceSheet = this.$store.state.sheets[this.$store.state.activeSheet].name;
-            const includedPapers = this.$store.getters.activeIncludedPapers;
-
-            const newPapers = [];
-            Promise.all(
-                includedPapers.map((paper) => querySemanticScholar(paper.doi)),
-            ).then((results) => {
-                results.forEach((result) => {
-                    result.citations.forEach((paper) => newPapers.push(paper));
-                    result.references.forEach((paper) => newPapers.push(paper));
-                });
-                const sheetId = `layer-${Object.keys(this.$store.state.sheets).length}`;
-                const sheetName = `Snowball from "${sourceSheet}"`;
-                console.log(`[PapersScreen][snowball] Adding new sheet (${sheetId}) named '${sheetName}'.`);
-                this.$store.commit('addSheet', {
-                    id: sheetId, name: sheetName, papers: [], preventCommit: true,
-                });
-                console.log(`[PapersScreen][snowball] Setting active sheet to '${sheetId}'.`);
-                this.$store.commit('setActiveSheet', sheetId);
-                this.addImportedPapers(newPapers);
-
-                console.info(`[PapersScreen][snowball] Snowballing finished for ${newPapers.length} papers.`);
             });
         },
 

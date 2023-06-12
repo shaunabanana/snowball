@@ -116,7 +116,7 @@ export default {
 
             let selectedPapers = workflowInput.papers;
             // If selection is specified, then filter input data using
-            if (workflowInput.selection && workflowInput.selection.length > 0) {
+            if (Array.isArray(workflowInput.selection)) {
                 selectedPapers = selectedPapers.filter(
                     (paper) => workflowInput.selection.includes(paper.id),
                 );

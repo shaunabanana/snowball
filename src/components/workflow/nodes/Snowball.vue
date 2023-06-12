@@ -5,7 +5,7 @@
         :inputs="[
             { id: 'papers', type: 'papers', text: 'Papers', class: 'data' },
             {
-                id: 'selection', type: 'papers',
+                id: 'selection', type: 'selection',
                 text: 'Selection: Only snowball from specific papers'
             },
         ]"
@@ -16,7 +16,10 @@
     >
         <a-space direction="vertical">
             <a-descriptions size="small" :column="1">
-                <a-descriptions-item label="Source papers">
+                <a-descriptions-item label="Input papers">
+                    {{ data.input ? snowballPapers.length : 'N/A' }}
+                </a-descriptions-item>
+                <a-descriptions-item label="Snowball-able (has DOI)">
                     {{ data.input ? snowballPapers.length : 'N/A' }}
                 </a-descriptions-item>
                 <a-descriptions-item label="New papers found">
@@ -37,7 +40,7 @@
 
 <script>
 import useSnowballStore from '@/store';
-// import { queryOpenAlex } from '@/utils/literature';
+import { queryOpenAlex } from '@/utils/snowball';
 import Node from './Node.vue';
 
 export default {
@@ -93,13 +96,19 @@ export default {
 
             let selectedPapers = workflowInput.papers;
             // If selection is specified, then filter input data using
-            if (workflowInput.selection && workflowInput.selection.length > 0) {
+            if (Array.isArray(workflowInput.selection)) {
                 selectedPapers = selectedPapers.filter(
                     (paper) => workflowInput.selection.includes(paper.id),
                 );
             }
 
-            console.log(selectedPapers);
+            const dois = selectedPapers.filter((p) => p.doi).map((p) => p.doi);
+
+            console.log(dois);
+
+            queryOpenAlex(dois, this.store.user);
+
+            nodeData.loading = false;
 
             // // Do things
             // // const inputIds = input.map((paper) => paper.id);

@@ -11,7 +11,7 @@ const writeProject = debounce((store) => {
     if (!store.projectPath || store.projectPath.length === 0) return;
     lock.acquire('writeProject', () => new Promise((resolve, reject) => {
         console.log('Writing the project', store);
-        ipcRenderer.invoke('write-project', JSON.stringify(store))
+        ipcRenderer.invoke('write-project', JSON.stringify({ ...store, flow: undefined }))
             .then(() => resolve())
             .catch((error) => reject(error));
     })).then(() => {

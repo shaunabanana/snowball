@@ -6,7 +6,7 @@ self.onmessage = ({ data }) => {
 
     let selectedPapers = papers;
     // If selection is specified, then filter input data using
-    if (Array.isArray(selection) && selection.length > 0) {
+    if (Array.isArray(selection)) {
         selectedPapers = selectedPapers.filter(
             (paper) => selection.includes(paper.id),
         );

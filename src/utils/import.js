@@ -25,6 +25,15 @@ function unArray(array) {
     return result;
 }
 
+// function unArrayLast(array) {
+//     if (!Array.isArray(array)) return array;
+//     let result = array[array.length - 1];
+//     while (Array.isArray(result)) {
+//         result = result[result.length - 1];
+//     }
+//     return result;
+// }
+
 function processCitationJs(fileContent, preprocess) {
     let toLoad = fileContent;
     if (preprocess) toLoad = fileContent.replace(/([^\\])\$/g, '$1\\$');
@@ -33,6 +42,7 @@ function processCitationJs(fileContent, preprocess) {
         const originalRecord = { ...record };
         // eslint-disable-next-line no-underscore-dangle
         delete originalRecord._graph;
+        console.log('asdf', record);
         return {
             id: record.DOI ? record.DOI.toLowerCase() : record.id.toLowerCase(),
             doi: record.DOI,

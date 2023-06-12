@@ -99,8 +99,8 @@ export default defineStore('snowball', {
         tag: (state) => (id) => state.tags.find((tag) => tag.id === id),
         tagUsageCount(state) {
             const usage = {};
-            const { papers } = this;
-            console.log(this, this.papers, papers);
+            // const { papers } = this;
+            // console.log(this, this.papers, papers);
             state.tags.forEach((tag) => {
                 usage[tag.id] = 0;
             });
@@ -111,7 +111,7 @@ export default defineStore('snowball', {
                     usage[tag.id] += 1;
                 });
             });
-            console.log(usage);
+            // console.log(usage);
             return usage;
         },
 

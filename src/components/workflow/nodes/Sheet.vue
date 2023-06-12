@@ -4,14 +4,14 @@
         :loading="data.loading"
         :inputs="[
             { id: 'papers', type: 'papers', text: 'Papers', class: 'data' },
-            { id: 'selection', type: 'papers', text: 'Selection: Only show specific papers' },
+            { id: 'selection', type: 'selection', text: 'Selection: Only show specific papers' },
         ]"
         :outputs="[
             { id: 'papers', type: 'papers', text: 'Papers', class: 'data' },
-            { id: 'sheet', text: 'Selection: All papers in sheet' },
-            { id: 'included', text: 'Selection: Included papers' },
-            { id: 'excluded', text: 'Selection: Excluded papers' },
-            { id: 'undecided', text: 'Selection: Undecided papers' },
+            { id: 'sheet', type: 'selection', text: 'Selection: All papers in sheet' },
+            { id: 'included', type: 'selection', text: 'Selection: Included papers' },
+            { id: 'excluded', type: 'selection', text: 'Selection: Excluded papers' },
+            { id: 'undecided', type: 'selection', text: 'Selection: Undecided papers' },
         ]"
         :notes="data.notes"
         :edit="!!this.data.sheet"

@@ -3,7 +3,7 @@ self.onmessage = ({ data }) => {
     const { papers, edits, selection } = JSON.parse(data);
     let selectedPapers = papers;
     // If selection is specified, then filter input data using
-    if (selection && selection.length > 0) {
+    if (Array.isArray(selection)) {
         selectedPapers = selectedPapers.filter(
             (paper) => selection.includes(paper.id),
         );
