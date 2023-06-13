@@ -95,7 +95,9 @@ export default {
         if (!this.data.edits) {
             nodeData.edits = {};
         }
-        this.worker = new Worker(new URL('./workers/sheet.js', import.meta.url));
+        this.worker = new Worker(new URL('./workers/sheet.js', import.meta.url), {
+            type: 'module',
+        });
 
         this.store.activeSheet = this.id;
         this.handleInput();

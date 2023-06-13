@@ -1,0 +1,52 @@
+/**
+ * @see https://www.electron.build/configuration/configuration
+ */
+{
+  "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
+  "appId": "design.shengchen.snowball",
+  "productName": "Snowball",
+  "asar": true,
+  "directories": {
+    "output": "release/${version}"
+  },
+  "files": [
+    "dist-electron",
+    "dist"
+  ],
+  "afterSign": "electron-builder-notarize",
+  "fileAssociations": [
+    {
+      "ext": "snowball",
+      "name": "Snowball Project",
+      "description": "Literature review project created with Snowball.",
+      "role": "Editor",
+      "icon": "document.icns",
+      "isPackage": true,
+    },
+  ],
+  "mac": {
+    "artifactName": "${productName}_${version}.${ext}",
+    "target": [
+      "dmg"
+    ],
+    "hardenedRuntime": true,
+    "entitlements": "./node_modules/electron-builder-notarize/entitlements.mac.inherit.plist",
+  },
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": [
+          "x64"
+        ]
+      }
+    ],
+    "artifactName": "${productName}_${version}.${ext}"
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": false,
+    "allowToChangeInstallationDirectory": true,
+    "deleteAppDataOnUninstall": false
+  }
+}

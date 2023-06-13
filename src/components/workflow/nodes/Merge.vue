@@ -129,7 +129,9 @@ export default {
             nodeData.changed = true;
             nodeData.merges = {};
         }
-        this.worker = new Worker(new URL('./workers/merge.js', import.meta.url));
+        this.worker = new Worker(new URL('./workers/merge.js', import.meta.url), {
+            type: 'module',
+        });
     },
 
     methods: {

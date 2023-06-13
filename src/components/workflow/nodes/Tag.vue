@@ -108,7 +108,9 @@ export default {
         if (!this.data.color) {
             nodeData.color = 'blue';
         }
-        this.worker = new Worker(new URL('./workers/tag.js', import.meta.url));
+        this.worker = new Worker(new URL('./workers/tag.js', import.meta.url), {
+            type: 'module',
+        });
         this.handleInput();
     },
 

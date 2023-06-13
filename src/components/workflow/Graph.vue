@@ -15,7 +15,7 @@
         :selection-key-code="null"
         :multi-selection-key-code="null"
     >
-        <Background :variant="BackgroundVariant.Lines" pattern-color="#eee" />
+        <Background :size="0.1" :variant="BackgroundVariant.Lines" pattern-color="#eee" />
         <MiniMap v-if="minimap"/>
     </VueFlow>
 </template>

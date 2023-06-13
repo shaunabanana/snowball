@@ -107,7 +107,9 @@ export default {
         if (!this.data.tags) {
             nodeData.tags = [];
         }
-        this.worker = new Worker(new URL('./workers/filter.js', import.meta.url));
+        this.worker = new Worker(new URL('./workers/filter.js', import.meta.url), {
+            type: 'module',
+        });
         this.handleInput();
     },
 

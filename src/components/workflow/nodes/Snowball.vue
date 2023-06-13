@@ -72,7 +72,9 @@ export default {
         if (!this.data.sort) {
             nodeData.sort = ['keywords', ''];
         }
-        this.worker = new Worker(new URL('./workers/snowball.js', import.meta.url));
+        this.worker = new Worker(new URL('./workers/snowball.js', import.meta.url), {
+            type: 'module',
+        });
         this.handleInput();
     },
 

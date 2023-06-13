@@ -73,7 +73,9 @@ export default {
         if (!this.data.format) {
             nodeData.format = 'ris';
         }
-        this.worker = new Worker(new URL('./workers/export.js', import.meta.url));
+        this.worker = new Worker(new URL('./workers/export.js', import.meta.url), {
+            type: 'module',
+        });
         this.handleInput();
     },
 

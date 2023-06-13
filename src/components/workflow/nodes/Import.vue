@@ -75,7 +75,9 @@ export default {
 
     mounted() {
         this.store.workflowNode(this.id).data.run = this.reload.bind(this);
-        this.worker = new Worker(new URL('./workers/import.js', import.meta.url));
+        this.worker = new Worker(new URL('./workers/import.js', import.meta.url), {
+            type: 'module',
+        });
 
         console.log('importing', this.data.path);
 

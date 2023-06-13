@@ -1,18 +1,18 @@
 <template>
-    <a-config-provider :locale="enUS">
-        <a-layout class="app">
-            <Menu v-if="store.projectPath" v-model:item="store.screen" />
-            <LoadProject @done="showIdentity = true"/>
-            <ConfigIdentity
-                :visible="showIdentity"
-                @confirm="showIdentity = false; loaded = true; wait = true"
-            />
-            <LoadingWait v-if="wait && store.running" @unmount="wait = false" />
-            <ProjectScreen v-if="loaded" v-show="store.screen === 'project'" />
-            <WorkflowScreen v-if="loaded" v-show="store.screen === 'workflow'" />
-            <PapersScreen v-if="loaded" v-show="store.screen === 'screen'" />
-        </a-layout>
-    </a-config-provider>
+  <a-config-provider :locale="enUS">
+      <a-layout class="app">
+          <Menu v-if="store.projectPath" v-model:item="store.screen" />
+          <LoadProject @done="showIdentity = true"/>
+          <ConfigIdentity
+              :visible="showIdentity"
+              @confirm="showIdentity = false; loaded = true; wait = true"
+          />
+          <LoadingWait v-if="wait && store.running" @unmount="wait = false" />
+          <ProjectScreen v-if="loaded" v-show="store.screen === 'project'" />
+          <WorkflowScreen v-if="loaded" v-show="store.screen === 'workflow'" />
+          <PapersScreen v-if="loaded" v-show="store.screen === 'screen'" />
+      </a-layout>
+  </a-config-provider>
 </template>
 
 <script>
@@ -39,50 +39,50 @@ const Store = require('electron-store');
 // import Query from '@/search';
 
 export default {
-    name: 'App',
-    components: {
-        Menu,
-        LoadProject,
-        ConfigIdentity,
-        LoadingWait,
-        ProjectScreen,
-        WorkflowScreen,
-        PapersScreen,
-    },
+  name: 'App',
+  components: {
+      Menu,
+      LoadProject,
+      ConfigIdentity,
+      LoadingWait,
+      ProjectScreen,
+      WorkflowScreen,
+      PapersScreen,
+  },
 
-    setup: () => ({
-        store: useSnowballStore(),
-    }),
+  setup: () => ({
+      store: useSnowballStore(),
+  }),
 
-    provide: {
-        config: new Store(),
-    },
+  provide: {
+      config: new Store(),
+  },
 
-    data() {
-        return {
-            enUS,
-            projectPath: null,
-            showIdentity: false,
-            wait: false,
-            loaded: false,
-        };
-    },
+  data() {
+      return {
+          enUS,
+          projectPath: null,
+          showIdentity: false,
+          wait: false,
+          loaded: false,
+      };
+  },
 
-    mounted() {
-        console.log(mapStores(useSnowballStore));
-        window.onerror = (message) => {
-            if (message === 'ResizeObserver loop limit exceeded') return;
-            Message.error(message);
-        };
+  mounted() {
+      console.log(mapStores(useSnowballStore));
+      window.onerror = (message) => {
+          if (message === 'ResizeObserver loop limit exceeded') return;
+          Message.error(message);
+      };
 
-        // Object.assign(console, log.functions);
+      // Object.assign(console, log.functions);
 
-        ipcRenderer.invoke('get-version').then((version) => {
-            this.store.version = version;
-        });
+      ipcRenderer.invoke('get-version').then((version) => {
+          this.store.version = version;
+      });
 
-        // document.body.setAttribute('arco-theme', 'dark');
-    },
+      // document.body.setAttribute('arco-theme', 'dark');
+  },
 };
 </script>
 
@@ -91,9 +91,9 @@ html,
 body,
 #app,
 .app {
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    background: var(--color-bg-1);
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--color-bg-1);
 }
 </style>
