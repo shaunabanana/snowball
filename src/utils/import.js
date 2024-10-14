@@ -42,7 +42,7 @@ function processCitationJs(fileContent, preprocess) {
         const originalRecord = { ...record };
         // eslint-disable-next-line no-underscore-dangle
         delete originalRecord._graph;
-        console.log('asdf', record);
+        // console.log('asdf', record);
         return {
             id: record.DOI ? record.DOI.toLowerCase() : record.id.toLowerCase(),
             doi: record.DOI,

@@ -3,7 +3,10 @@
         :id="id"
         :loading="data.loading"
         :notes="data.notes"
-        :outputs="[{ id: 'papers', text: 'Imported papers', type: 'papers', class: 'data' }]"
+        :outputs="[
+            { id: 'papers', text: 'Imported papers', type: 'papers', class: 'data' },
+            { id: 'selection', text: 'Selection: All imported papers', type: 'selection' }
+        ]"
     >
         <a-space direction="vertical">
             <a-descriptions size="small" :column="1">
@@ -40,116 +43,111 @@
     </Node>
 </template>
 
-<script>
+<script setup>
 import {
-    basename, dirname, join, relative,
+	basename, dirname, join, relative,
 } from 'path';
 import { readFile } from 'fs/promises';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { ipcRenderer } from 'electron';
-
 import { updateAutoTags } from '@/utils/tags';
 import writeProject from '@/utils/persistence';
 import useSnowballStore from '@/store';
 import Node from './Node.vue';
+import { reactive, ref, computed, onMounted } from 'vue';
 
-export default {
-    name: 'ImportPapers',
-    components: {
-        Node,
-    },
-    props: {
-        id: String,
-        data: Object,
-    },
-    setup: () => ({
-        store: useSnowballStore(),
-    }),
 
-    data() {
-        return {
-            worker: null,
-            fileList: [],
-        };
-    },
+// Data
+const worker = ref(null);
+const fileList = reactive([]);
+const store = useSnowballStore()
 
-    mounted() {
-        this.store.workflowNode(this.id).data.run = this.reload.bind(this);
-        this.worker = new Worker(new URL('./workers/import.js', import.meta.url), {
-            type: 'module',
-        });
+// Props
+const props = defineProps({
+	id: String,
+	data: Object,
+});
 
-        console.log('importing', this.data.path);
+// Computed
+const fileName = computed(() => {
+	return props.data.path ? basename(props.data.path) : null;
+})
 
-        if (this.data.path) {
-            const filePath = join(dirname(this.store.projectPath), this.data.path);
-            console.log('Importing', filePath);
-            this.loadFile(filePath);
-        }
-    },
+const fileLocation = computed(() => {
+	return props.data.path.length > 30
+		? `${props.data.path.slice(0, 15)}...${props.data.path.slice(-15)}`
+		: props.data.path;
+})
 
-    methods: {
-        loadFile(filePath) {
-            const nodeData = this.store.workflowNode(this.id).data;
-            nodeData.loading = true;
-            readFile(filePath, 'utf-8').then((content) => {
-                this.worker.postMessage({ content, preprocess: filePath.endsWith('.bib') });
-                this.worker.onmessage = ({ data }) => {
-                    // Update auto tags
-                    updateAutoTags(this.store, data);
-                    // Update node data
-                    const project = dirname(this.store.projectPath);
-                    const location = relative(project, filePath);
-                    nodeData.path = location;
-                    // Update output cache
-                    this.store.dataflow.output[this.id] = { papers: data };
-                    console.log(`[ImportPapers][loadFile] Imported ${data.length} papers from ${filePath}`);
-                    // Stop loading animation
-                    nodeData.loading = false;
-                    // Trigger workflow
-                    this.store.runWorkflow(this.id);
-                    writeProject(this.store);
-                };
-                this.worker.onerror = (error) => {
-                    console.log('Error reading file.', error);
-                    this.$message.error(error.message);
-                    this.fileList = [];
-                    nodeData.loading = false;
-                };
-            });
-        },
 
-        openFile() {
-            ipcRenderer.invoke('open-file').then((filePath) => {
-                if (!filePath) {
-                    return;
-                }
-                this.loadFile(filePath[0]);
-            });
-        },
+// Methods
+const loadFile = function(filePath) {
+	const nodeData = store.workflowNode(props.id).data;
+	nodeData.loading = true;
+	readFile(filePath, 'utf-8').then((content) => {
+		worker.value.postMessage({ content,
+			preprocess: filePath.endsWith('.bib') });
+		worker.value.onmessage = ({ data }) => {
+			// Update auto tags
+			updateAutoTags(store, data);
+			// Update node data
+			const project = dirname(store.projectPath);
+			const location = relative(project, filePath);
+			nodeData.path = location;
+			// Update output cache
+			store.dataflow.output[props.id] = { 
+				papers: data,
+				selection: data.map((paper) => paper.id)
+			};
+			console.log(`[ImportPapers][loadFile] Imported ${data.length} papers from ${filePath}`);
+			// Stop loading animation
+			nodeData.loading = false;
+			// Trigger workflow
+			store.runWorkflow(props.id);
+			writeProject(store);
+		};
+		worker.value.onerror = (error) => {
+			console.log('Error reading file.', error);
+			this.$message.error(error.message);
+			fileList = [];
+			nodeData.loading = false;
+		};
+	});
+}
 
-        reload() {
-            if (!this.data.path) {
-                this.store.dataflow.output[this.id] = {};
-                this.store.runWorkflow(this.id);
-                return;
-            }
-            this.loadFile(join(dirname(this.store.projectPath), this.data.path));
-        },
-    },
+const openFile = function() {
+	ipcRenderer.invoke('open-file').then((filePath) => {
+		if (!filePath) {
+			return;
+		}
+		loadFile(filePath[0]);
+	});
+}
 
-    computed: {
-        fileName() {
-            return this.data.path ? basename(this.data.path) : null;
-        },
+const reload = function() {
+	if (!props.data.path) {
+		store.dataflow.output[props.id] = {};
+		store.runWorkflow(props.id);
+		return;
+	}
+	loadFile(join(dirname(store.projectPath), props.data.path));
+}
 
-        fileLocation() {
-            return this.data.path.length > 30
-                ? `${this.data.path.slice(0, 15)}...${this.data.path.slice(-15)}`
-                : this.data.path;
-        },
-    },
-};
+
+// Mounted
+onMounted(() => {
+	store.workflowNode(props.id).data.run = reload.bind(this);
+	worker.value = new Worker(new URL('./workers/import.js', import.meta.url), {
+		type: 'module',
+	});
+
+	console.log('importing', props.data.path);
+
+	if (props.data.path) {
+		const filePath = join(dirname(store.projectPath), props.data.path);
+		console.log('Importing', filePath);
+		loadFile(filePath);
+	}
+})
 </script>
 
 <style scoped>
