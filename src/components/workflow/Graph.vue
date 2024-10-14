@@ -7,7 +7,7 @@
             style: edgeStyle
         }"
         :min-zoom="0.2"
-        :max-zoom="1"
+        :max-zoom="1.5"
         :default-zoom="1"
         :fit-view-on-init="true"
         :snap-to-grid="true"
