@@ -122,9 +122,11 @@ export default defineStore('snowball', {
                 if (this.dataflow.input[state.activeSheet]) {
                     const { selection } = this.dataflow.input[state.activeSheet];
                     if (selection && Array.isArray(selection)) {
-                        currentPapers = currentPapers.filter(
-                            (paper) => selection.includes(paper.id),
-                        );
+                        if (currentPapers) {
+                            currentPapers = currentPapers.filter(
+                                (paper) => selection.includes(paper.id),
+                            );
+                        }
                     }
                 }
             }
