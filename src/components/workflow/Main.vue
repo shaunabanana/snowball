@@ -107,7 +107,7 @@ export default {
             if (this.store.screen !== 'workflow') return;
             if (event.key !== 'Backspace') return;
 
-            const selectedEdges = this.flow.edges
+            const selectedEdges = this.flow.getEdges.value
                 .filter((edge) => edge.selected)
                 .map((edge) => edge.id);
             if (selectedEdges.length === 0) return;
