@@ -35,6 +35,14 @@
                 </a-descriptions-item>
             </a-descriptions>
         </a-space>
+
+        <a-space direction="vertical" fill>
+            <a-button size="small" type="primary" long
+                @click="doSnowball"
+            >
+                Snowball
+            </a-button>
+        </a-space>
     </Node>
 </template>
 
@@ -59,7 +67,7 @@ export default {
 
     mounted() {
         const nodeData = this.store.workflowNode(this.id).data;
-        nodeData.run = this.handleInput.bind(this);
+        // nodeData.run = this.doSnowball.bind(this);
         if (!this.data.forward) {
             nodeData.forward = true;
         }
@@ -75,11 +83,10 @@ export default {
         this.worker = new Worker(new URL('./workers/snowball.js', import.meta.url), {
             type: 'module',
         });
-        this.handleInput();
     },
 
     methods: {
-        handleInput() {
+        doSnowball() {
             const nodeData = this.store.workflowNode(this.id).data;
             const workflowInput = this.store.dataflow.input[this.id];
             if (
