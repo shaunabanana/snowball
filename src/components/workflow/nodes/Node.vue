@@ -87,13 +87,6 @@ export default {
             writeProject(this.store);
             this.store.runWorkflow();
         },
-
-        isValidConnection(connection) {
-            const edges = this.$store.state.workflow.filter(
-                (el) => el.source === connection.source && el.target === connection.target,
-            );
-            return edges.length === 0;
-        },
     },
 };
 </script>
