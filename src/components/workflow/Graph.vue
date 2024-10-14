@@ -36,6 +36,7 @@ import MergeNode from './nodes/Merge.vue';
 import FilterNode from './nodes/Filter.vue';
 import TagNode from './nodes/Tag.vue';
 import ScriptNode from './nodes/Script.vue';
+import BooleanNode from './nodes/Boolean.vue';
 
 // $emit('update:modelValue', $event)
 
@@ -77,6 +78,7 @@ export default {
                 filter: markRaw(FilterNode),
                 tag: markRaw(TagNode),
                 script: markRaw(ScriptNode),
+                boolean: markRaw(BooleanNode),
             },
         };
     },
