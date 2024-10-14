@@ -9,7 +9,7 @@
             :class="handle.class"
             :style="{
                 ...handle.style,
-                transform: `translate(0, ${(index - handles.length / 2) * spacing}px)`
+                transform: `translate(${position === 'right' ? '50%': '-50%'}, ${(index - handles.length / 2) * spacing}px)`
             }"
             :is-valid-connection="isValidConnection"
         />
