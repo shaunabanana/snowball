@@ -18,9 +18,9 @@
                 </a-descriptions-item>
                 <a-descriptions-item label="Paper count">
                     {{
-                        store.dataflow.output[this.id]
-                        && store.dataflow.output[this.id].papers
-                        ? store.dataflow.output[this.id].papers.length
+                        store.dataflow.output[id]
+                        && store.dataflow.output[id].papers
+                        ? store.dataflow.output[id].papers.length
                         : 'N/A'
                     }}
                 </a-descriptions-item>
@@ -108,7 +108,7 @@ const loadFile = function(filePath) {
 		worker.value.onerror = (error) => {
 			console.log('Error reading file.', error);
 			this.$message.error(error.message);
-			fileList = [];
+			fileList.value = [];
 			nodeData.loading = false;
 		};
 	});
