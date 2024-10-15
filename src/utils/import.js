@@ -1,6 +1,7 @@
 // import readXlsxFile from 'read-excel-file'
 // import bibtexParse from '@orcid/bibtex-parse-js';
 import Cite from 'citation-js';
+import { formatCitationJsRecord } from './common';
 
 export function formatAuthors(authors) {
     if (authors.length >= 3) {
@@ -15,45 +16,12 @@ export function formatAuthors(authors) {
     return '';
 }
 
-function unArray(array) {
-    if (!Array.isArray(array)) return array;
-    let result = array[0];
-    while (Array.isArray(result)) {
-        const [firstElement] = result;
-        result = firstElement;
-    }
-    return result;
-}
-
-// function unArrayLast(array) {
-//     if (!Array.isArray(array)) return array;
-//     let result = array[array.length - 1];
-//     while (Array.isArray(result)) {
-//         result = result[result.length - 1];
-//     }
-//     return result;
-// }
-
 function processCitationJs(fileContent, preprocess) {
     let toLoad = fileContent;
     if (preprocess) toLoad = fileContent.replace(/([^\\])\$/g, '$1\\$');
     const bib = Cite(toLoad);
     return bib.data.map((record) => {
-        const originalRecord = { ...record };
-        // eslint-disable-next-line no-underscore-dangle
-        delete originalRecord._graph;
-        // console.log('asdf', record);
-        return {
-            id: record.DOI ? record.DOI.toLowerCase() : record.id.toLowerCase(),
-            doi: record.DOI,
-            type: record.type,
-            title: record.title,
-            authors: record.author ? record.author : [],
-            abstract: record.abstract,
-            year: record.issued ? unArray(record.issued['date-parts']) : 'Unknown',
-            keywords: record.keyword ? record.keyword.split(',').map((s) => s.trim()) : [],
-            record: originalRecord,
-        };
+        return formatCitationJsRecord(record);
     });
 }
 
