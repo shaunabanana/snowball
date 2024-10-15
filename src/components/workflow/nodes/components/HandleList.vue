@@ -81,4 +81,12 @@ export default {
     background: rgb(var(--primary-6)) !important;
     border-radius: 2px !important;
 }
+
+.port.graph {
+    width: 6px !important;
+    height: 6px !important;
+    border: 1px solid rgb(var(--success-6)) !important;
+    background: rgb(var(--success-6)) !important;
+    border-radius: 2px !important;
+}
 </style>

@@ -1,81 +1,15 @@
-import axios from 'axios';
-import Queue from 'queue-promise';
+import ky from 'ky';
+import Cite from "citation-js"
+import pThrottle from 'p-throttle';
 
-function formatSemanticScholarPaper(paper) {
-    let { paperId } = paper;
-    if (paper.externalIds && paper.externalIds.DOI) {
-        paperId = paper.externalIds.DOI;
-    }
-    return {
-        id: paperId.toLowerCase(),
-        doi: paper.externalIds ? paper.externalIds.DOI : undefined,
-        type: 'paper',
-        title: paper.title,
-        authors: paper.authors.map((author) => ({ family: author.name, given: '' })),
-        abstract: paper.abstract,
-        year: paper.year ? paper.year : 'Unknown',
-        keywords: [],
-        record: { ...paper },
-    };
-}
+import { formatCitationJsRecord, formatPapers } from './common';
 
-export function querySemanticScholar(doi) {
-    const citations = [];
-    const references = [];
 
-    return new Promise((resolve) => {
-        axios.get(`https://api.semanticscholar.org/graph/v1/paper/${doi}/references?fields=title,url,abstract,authors,year,externalIds,venue,journal&limit=1000`).then((refResponse) => {
-            console.log('[Literature][querySemanticScholar] Got response for references', refResponse.data.data);
-            refResponse.data.data.forEach((paper) => {
-                if (paper.citedPaper.paperId) {
-                    references.push(formatSemanticScholarPaper(paper.citedPaper));
-                }
-            });
+const throttle = pThrottle({
+	limit: 1,
+	interval: 1000
+});
 
-            axios.get(`https://api.semanticscholar.org/graph/v1/paper/${doi}/citations?fields=title,url,abstract,authors,year,externalIds,venue,journal&limit=1000`).then((citeResponse) => {
-                console.log('[Literature][querySemanticScholar] Got response for citations', citeResponse.data.data);
-                citeResponse.data.data.forEach((paper) => {
-                    if (paper.citingPaper.paperId) {
-                        citations.push(formatSemanticScholarPaper(paper.citingPaper));
-                    }
-                });
-                resolve({
-                    citations,
-                    references,
-                });
-            }).catch(() => {
-                resolve({
-                    citations,
-                    references,
-                });
-            });
-        }).catch(() => {
-            axios.get(`https://api.semanticscholar.org/graph/v1/paper/${doi}/citations?fields=title,url,abstract,authors,year,externalIds,venue,journal&limit=1000`).then((citeResponse) => {
-                console.log('[Literature][querySemanticScholar] Got response for citations', citeResponse.data.data);
-                citeResponse.data.data.forEach((paper) => {
-                    if (paper.citingPaper.paperId) {
-                        citations.push(formatSemanticScholarPaper(paper.citingPaper));
-                    }
-                });
-                resolve({
-                    citations,
-                    references,
-                });
-            }).catch(() => {
-                resolve({
-                    citations,
-                    references,
-                });
-            });
-        });
-    });
-}
-
-// function delay(time) {
-//     return new Promise((resolve) => {
-//         setTimeout(resolve, time);
-//     });
-// }
 
 function splitChunks(array, chunkSize) {
     return array.reduce((resultArray, item, index) => {
@@ -92,125 +26,85 @@ function splitChunks(array, chunkSize) {
     }, []);
 }
 
-function callOpenAlexAPI(location, parameters) {
-    let query = '?';
-    if (parameters) {
-        Object.keys(parameters).forEach((key, index) => {
-            if (index > 0) query += '&';
-            query += `${key}=${parameters[key]}`;
-        });
-    }
-    const finalUrl = `https://api.openalex.org${location + query}`;
-    return new Promise((resolve, reject) => {
-        console.log(finalUrl);
-        axios.get(finalUrl)
-            .then((response) => resolve(response))
-            .catch((error) => reject(error));
-    });
-}
 
-function gatherMetadataForKeys(keyType, keys, user) {
-    return new Promise((resolve) => {
-        const chunks = splitChunks(keys, 50);
-        const responses = [];
-        const queue = new Queue({
-            concurrent: 1,
-            interval: 100,
-        });
-        queue.on('resolve', (data) => {
-            responses.push(data);
-        });
-        queue.on('end', () => {
-            const results = [];
-            responses.forEach((response) => {
-                response.data.results.forEach((result) => {
-                    results.push(result);
-                });
-            });
-            resolve(results);
-        });
-        chunks.forEach((chunk) => {
-            queue.enqueue(() => callOpenAlexAPI('/works', {
-                filter: `${keyType}:${chunk.join('|')}`,
-                mailto: user.email,
-                'per-page': 50,
-            }));
-        });
-    });
-}
+const getCitationJsRecord = throttle(async (doi) => {
+    const response = await Cite(doi);
+    if (response.data.length === 0) return null;
+    return response.data[0];
+})
 
-export function queryOpenAlex(dois, user) {
-    // const citations = [];
-    // const references = [];
 
-    const processedDOIs = dois.map((doi) => (
-        doi.startsWith('https://doi.org/')
-            ? doi
-            : `https://doi.org/${doi}`
-    ));
-    console.log(processedDOIs);
+export async function querySemanticScholar(dois, getCitations, getReferences, includeArxiv) {
+    const query = "https://api.semanticscholar.org/graph/v1/paper/batch"
+    const fields = ["title", "externalIds", "abstract", "year"]
 
-    gatherMetadataForKeys('doi', processedDOIs, user).then((results) => {
+    const citationFields = getCitations ? fields.map((field) => `citations.${field}`): []
+    const referenceFields = getReferences ? fields.map((field) => `references.${field}`): []
+
+    console.log(citationFields, referenceFields);
+
+    // The API allows a maximum of 500 papers at once. See https://api.semanticscholar.org/api-docs/#tag/Paper-Data/operation/post_graph_get_papers
+    const chunks = splitChunks(dois, 500);
+
+    const papers = [];
+    const graph = [];
+    const citations = [];
+    const references = [];
+
+    for (let chunk of chunks) {
+        const results = await ky.post(query, {
+            searchParams: {
+                fields: citationFields.concat(referenceFields).join(",")
+            },
+            json: {
+                ids: chunk.map((doi) => `DOI:${doi}`)
+            }
+        }).json()
+
         console.log(results);
-    });
 
-    // return new Promise((resolve) => {
-    //     axios.get(`https://api.openalex.org/works/https://doi.org/${processedDOI}?${mailto}`).then((response) => {
-    //         console.log('[Literature][queryOpenAlex] Got response', response.data);
-    //         const openAlexId = response.data.id.replace(/^https:\/\/openalex.org\//, '');
+        for (let index in results) {
+            const doi = chunk[index];
+            const result = results[index];
+            console.log(`Parsing results for ${doi}...`);
+            for (let property of ["citations", "references"]) {
+                if (!result[property]) continue;
+                for (let citation of result[property]) {
+                    if (!citation.externalIds) continue;
+                    if (!citation.externalIds.DOI) {
+                        if (citation.externalIds.ArXiv && !includeArxiv) {
+                            citation.externalIds.DOI = `10.48550/arxiv.${citation.externalIds.ArXiv}`;
+                        } else {
+                            continue;
+                        }
+                    }
+                    if (!includeArxiv && citation.externalIds.DOI.toLowerCase().startsWith("10.48550/arxiv")) continue;
+                    console.log(citation.externalIds.DOI);
+                    try {
+                        const record = await getCitationJsRecord(citation.externalIds.DOI);
+                        const paper = formatCitationJsRecord(record, citation);
+                        papers.push(paper);
 
-    //         // Get outgoing citations
-    //         axios.get(`https://api.openalex.org/works?filter=cited_by:${openAlexId}${mailto}`).then((outResponse) => {
-    //             console.log('[Literature][queryOpenAlex] outgoing', outResponse.data);
-    //         });
+                        if (property === "citations") {
+                            graph.push({source: paper.id, target: doi})
+                            citations.push(paper.id);
+                        } else if (property === "references") {
+                            graph.push({source: doi, target: paper.id})
+                            references.push(paper.id);
+                        }
+                    } catch {
+                        continue
+                    }
+                }
+            }
+        }
+    }
 
-    //         // Get incoming citations
-    //         axios.get(`https://api.openalex.org/works?filter=cites:${openAlexId}${mailto}`).then((inResponse) => {
-    //             console.log('[Literature][queryOpenAlex] incoming', inResponse.data);
-    //         });
+    return { papers: formatPapers(papers), graph, citations, references }
+}
 
-    //         // refResponse.data.data.forEach((paper) => {
-    //         //     if (paper.citedPaper.paperId) {
-    //         //         references.push(formatSemanticScholarPaper(paper.citedPaper));
-    //         //     }
-    //         // });
-
-    //         // axios.get(`https://api.semanticscholar.org/graph/v1/paper/${doi}/citations?fields=title,url,abstract,authors,year,externalIds,venue,journal&limit=1000`).then((citeResponse) => {
-    //         //     console.log('[Literature][querySemanticScholar]
-    //         // Got response for citations', citeResponse.data.data);
-    //         //     citeResponse.data.data.forEach((paper) => {
-    //         //         if (paper.citingPaper.paperId) {
-    //         //             citations.push(formatSemanticScholarPaper(paper.citingPaper));
-    //         //         }
-    //         //     });
-    //         //     resolve({
-    //         //         citations,
-    //         //         references,
-    //         //     });
-    //     }).catch(() => {
-    //         resolve({
-    //             citations,
-    //             references,
-    //         });
-    //     });
-    // }).catch(() => {
-    //     // axios.get(`https://api.semanticscholar.org/graph/v1/paper/${doi}/citations?fields=title,url,abstract,authors,year,externalIds,venue,journal&limit=1000`).then((citeResponse) => {
-    //     //     console.log('[Literature][querySemanticScholar]
-    //     // Got response for citations', citeResponse.data.data);
-    //     //     citeResponse.data.data.forEach((paper) => {
-    //     //         if (paper.citingPaper.paperId) {
-    //     //             citations.push(formatSemanticScholarPaper(paper.citingPaper));
-    //     //         }
-    //     //     });
-    //     //     resolve({
-    //     //         citations,
-    //     //         references,
-    //     //     });
-    //     // }).catch(() => {
-    //     //     resolve({
-    //     //         citations,
-    //     //         references,
-    //     //     });
-    //     // });
-    // });
+export function snowball(source, dois, user) {
+    if (source === "semantic_scholar") {
+        querySemanticScholar(dois)
+    }
 }
