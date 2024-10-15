@@ -3,10 +3,10 @@
         <!-- {{$store.state.workflow}} -->
 
         <a-space direction="vertical" size="mini">
-            <div style="color: gray; font-size: 0.8em">
+            <div style="color: gray; font-size: 0.9em">
                 Basic functions
             </div>
-            <a-button-group size="mini">
+            <a-button-group size="small">
                 <a-button @click="$emit('create', 'import')">
                     <template #icon><icon-import /></template>
                     Import
@@ -23,10 +23,10 @@
         </a-space>
 
         <a-space direction="vertical" size="mini">
-            <div style="color: gray; font-size: 0.8em">
+            <div style="color: gray; font-size: 0.9em">
                 Paper operations
             </div>
-            <a-button-group size="mini">
+            <a-button-group size="small">
                 <a-button @click="$emit('create', 'merge')">
                     <template #icon><icon-copy /></template>
                     Merge
@@ -43,35 +43,39 @@
         </a-space>
 
         <a-space direction="vertical" size="mini">
-            <div style="color: gray; font-size: 0.8em">
+            <div style="color: gray; font-size: 0.9em">
                 Snowballing
             </div>
-            <a-button-group size="mini">
+            <a-button-group size="small">
                 <a-button @click="$emit('create', 'snowball')">
                     <template #icon><icon-play-arrow /></template>
                     Snowball
                 </a-button>
-                <a-button @click="$emit('create', 'graph')" disabled>
-                    <template #icon><icon-relation /></template>
-                    Graph
-                </a-button>
+                <a-tooltip content="Functionality coming soon!" position="bottom">
+                    <a-button @click="$emit('create', 'graph')" disabled>
+                        <template #icon><icon-relation /></template>
+                        Graph
+                    </a-button>
+                </a-tooltip>
             </a-button-group>
         </a-space>
 
         <a-space direction="vertical" size="mini">
-            <div style="color: gray; font-size: 0.8em">
+            <div style="color: gray; font-size: 0.9em">
                 Other
             </div>
-            <a-button-group size="mini">
+            <a-button-group size="small">
                 <a-button @click="$emit('create', 'boolean')">
                     <template #icon><icon-interaction /></template>
                     Boolean
                 </a-button>
 
-                <a-button @click="$emit('create', 'script')">
-                    <template #icon><icon-code /></template>
-                    Script
-                </a-button>
+                <a-tooltip content="Functionality coming soon!" position="bottom">
+                    <a-button @click="$emit('create', 'script')" disabled>
+                        <template #icon><icon-code /></template>
+                        Script
+                    </a-button>
+                </a-tooltip>
             </a-button-group>
         </a-space>
 
