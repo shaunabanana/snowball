@@ -34,7 +34,7 @@ import PapersScreen from '@/components/papers/Main.vue';
 
 import useSnowballStore from '@/store';
 
-const Store = require('electron-store');
+import Store from 'electron-store';
 
 // import Query from '@/search';
 
