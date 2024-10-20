@@ -41,7 +41,6 @@
     "pinia": "^2.2.4",
     "sanitize-basename": "^2.0.1",
     "sequmise": "^1.0.10",
-    "string-similarity": "^4.0.4",
     "toposort": "^2.0.2",
     "vue": "^3.4.21",
     "vue-boring-avatars": "^1.4.0",
