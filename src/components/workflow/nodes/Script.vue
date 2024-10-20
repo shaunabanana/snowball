@@ -58,7 +58,7 @@ import { relative, dirname, join } from 'path';
 import useSnowballStore from '@/store';
 import writeProject from '@/utils/persistence';
 import { exportRIS, exportBibTeX, exportCSV } from '@/utils/export';
-import Node from './Node.vue';
+import Node from './components/Node.vue';
 
 export default {
     name: 'RunScript',

@@ -69,7 +69,7 @@ import debounce from '@/utils/debounce';
 import useSnowballStore from '@/store';
 import writeProject from '@/utils/persistence';
 
-import Node from './Node.vue';
+import Node from './components/Node.vue';
 import DuplicateList from './components/DuplicateList.vue';
 
 export default {

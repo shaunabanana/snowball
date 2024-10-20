@@ -52,7 +52,7 @@ import { ipcRenderer } from 'electron';
 import { updateAutoTags } from '@/utils/tags';
 import writeProject from '@/utils/persistence';
 import useSnowballStore from '@/store';
-import Node from './Node.vue';
+import Node from './components/Node.vue';
 import { reactive, ref, computed, onMounted } from 'vue';
 
 

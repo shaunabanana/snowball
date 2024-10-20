@@ -50,7 +50,7 @@
 <script>
 import useSnowballStore from '@/store';
 import writeProject from '@/utils/persistence';
-import HandleList from './components/HandleList.vue';
+import HandleList from './HandleList.vue';
 
 export default {
     name: 'WorkflowNode',

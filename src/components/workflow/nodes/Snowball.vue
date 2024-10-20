@@ -54,7 +54,7 @@
 import useSnowballStore from '@/store';
 import writeProject from '@/utils/persistence';
 import { querySemanticScholar } from '@/utils/snowball';
-import Node from './Node.vue';
+import Node from './components/Node.vue';
 
 export default {
     name: 'SnowballNode',
