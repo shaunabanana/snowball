@@ -1,4 +1,7 @@
-import Cite from 'citation-js';
+import { Cite } from '@citation-js/core';
+import '@citation-js/plugin-bibtex';
+import '@citation-js/plugin-ris';
+
 // eslint-disable-next-line import/no-unresolved, import/extensions
 import { stringify } from 'csv-stringify/sync';
 

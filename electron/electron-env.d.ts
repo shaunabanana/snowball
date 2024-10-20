@@ -2,10 +2,26 @@
 
 declare namespace NodeJS {
   interface ProcessEnv {
-    VSCODE_DEBUG?: 'true'
-    DIST_ELECTRON: string
-    DIST: string
+    /**
+     * The built directory structure
+     *
+     * ```tree
+     * ├─┬─┬ dist
+     * │ │ └── index.html
+     * │ │
+     * │ ├─┬ dist-electron
+     * │ │ ├── main.js
+     * │ │ └── preload.js
+     * │
+     * ```
+     */
+    APP_ROOT: string
     /** /dist/ or /public/ */
-    PUBLIC: string
+    VITE_PUBLIC: string
   }
+}
+
+// Used in Renderer process, expose in `preload.ts`
+interface Window {
+  ipcRenderer: import('electron').IpcRenderer
 }

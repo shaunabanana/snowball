@@ -1,5 +1,9 @@
 import ky from 'ky';
-import Cite from "citation-js"
+import { Cite } from '@citation-js/core';
+import '@citation-js/plugin-doi';
+import '@citation-js/plugin-bibtex';
+import '@citation-js/plugin-ris';
+
 import pThrottle from 'p-throttle';
 
 import { formatCitationJsRecord, formatPapers } from './common';
@@ -46,6 +50,7 @@ export async function querySemanticScholar(dois, getCitations, getReferences, in
     // The API allows a maximum of 500 papers at once. See https://api.semanticscholar.org/api-docs/#tag/Paper-Data/operation/post_graph_get_papers
     const chunks = splitChunks(dois, 500);
 
+    const newDOIs = new Set();
     const papers = [];
     const graph = [];
     const citations = [];
@@ -66,6 +71,7 @@ export async function querySemanticScholar(dois, getCitations, getReferences, in
         for (let index in results) {
             const doi = chunk[index];
             const result = results[index];
+            if (!result) continue;
             console.log(`Parsing results for ${doi}...`);
             for (let property of ["citations", "references"]) {
                 if (!result[property]) continue;
@@ -92,7 +98,8 @@ export async function querySemanticScholar(dois, getCitations, getReferences, in
                             graph.push({source: doi, target: paper.id})
                             references.push(paper.id);
                         }
-                    } catch {
+                    } catch (e) {
+                        console.log(e);
                         continue
                     }
                 }

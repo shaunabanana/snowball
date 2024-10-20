@@ -1,6 +1,9 @@
 // import readXlsxFile from 'read-excel-file'
 // import bibtexParse from '@orcid/bibtex-parse-js';
-import Cite from 'citation-js';
+import { Cite } from '@citation-js/core';
+import '@citation-js/plugin-bibtex';
+import '@citation-js/plugin-ris';
+
 import { formatCitationJsRecord } from './common';
 
 export function formatAuthors(authors) {
@@ -28,6 +31,7 @@ function processCitationJs(fileContent, preprocess) {
 export function processFile(content, preprocess) {
     return new Promise((resolve, reject) => {
         try {
+            console.log(content);
             const result = processCitationJs(
                 content,
                 preprocess,
