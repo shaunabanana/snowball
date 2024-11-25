@@ -38,7 +38,7 @@ const getCitationJsRecord = throttle(async (doi) => {
 })
 
 
-export async function querySemanticScholar(dois, getCitations, getReferences, includeArxiv) {
+export async function querySemanticScholar(dois, getCitations, getReferences, includeArxiv, onProgress) {
     const query = "https://api.semanticscholar.org/graph/v1/paper/batch"
     const fields = ["title", "externalIds", "abstract", "year"]
 
@@ -50,13 +50,16 @@ export async function querySemanticScholar(dois, getCitations, getReferences, in
     // The API allows a maximum of 500 papers at once. See https://api.semanticscholar.org/api-docs/#tag/Paper-Data/operation/post_graph_get_papers
     const chunks = splitChunks(dois, 500);
 
-    const newDOIs = new Set();
+    let newDOIs = new Set();
+    const ssRecord = {};
+
     const papers = [];
     const graph = [];
     const citations = [];
     const references = [];
 
-    for (let chunk of chunks) {
+    for (let chunkIndex in chunks) {
+        const chunk = chunks[chunkIndex];
         const results = await ky.post(query, {
             searchParams: {
                 fields: citationFields.concat(referenceFields).join(",")
@@ -65,6 +68,8 @@ export async function querySemanticScholar(dois, getCitations, getReferences, in
                 ids: chunk.map((doi) => `DOI:${doi}`)
             }
         }).json()
+
+        if (onProgress) onProgress({ step: "Fetching relations...", progress: chunkIndex, target: chunks.length})
 
         console.log(results);
 
@@ -85,25 +90,36 @@ export async function querySemanticScholar(dois, getCitations, getReferences, in
                         }
                     }
                     if (!includeArxiv && citation.externalIds.DOI.toLowerCase().startsWith("10.48550/arxiv")) continue;
-                    console.log(citation.externalIds.DOI);
-                    try {
-                        const record = await getCitationJsRecord(citation.externalIds.DOI);
-                        const paper = formatCitationJsRecord(record, citation);
-                        papers.push(paper);
+                    const newDOI = citation.externalIds.DOI.toLowerCase();
+                    newDOIs.add(newDOI);
+                    ssRecord[newDOI] = citation;
+                    console.log(newDOI);
 
-                        if (property === "citations") {
-                            graph.push({source: paper.id, target: doi})
-                            citations.push(paper.id);
-                        } else if (property === "references") {
-                            graph.push({source: doi, target: paper.id})
-                            references.push(paper.id);
-                        }
-                    } catch (e) {
-                        console.log(e);
-                        continue
+                    if (property === "citations") {
+                        graph.push({source: newDOI, target: doi})
+                        citations.push(newDOI);
+                    } else if (property === "references") {
+                        graph.push({source: doi, target: newDOI})
+                        references.push(newDOI);
                     }
                 }
             }
+        }
+    }
+    newDOIs = [...newDOIs];
+    console.log(newDOIs);
+    console.log(`Retrieving metadata for new DOIs...`);
+    for (let doiIndex in newDOIs) {
+        const doi = newDOIs[doiIndex];
+        if (onProgress) onProgress({ step: "Fetching metadata...", progress: doiIndex, target: newDOIs.length})
+        try {
+            console.log(`${doi}`);
+            const record = await getCitationJsRecord(doi);
+            const paper = formatCitationJsRecord(record, ssRecord[doi]);
+            papers.push(paper);
+        } catch (e) {
+            console.log(e);
+            continue
         }
     }
 

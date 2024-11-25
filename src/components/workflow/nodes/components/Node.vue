@@ -1,6 +1,6 @@
 <template>
     <div class="workflow-node">
-        <a-spin :loading="loading" tip="Running...">
+        <a-spin :loading="loading" :tip="tip">
             <a-card size="small" hoverable>
                 <template #extra>
                     <a-popconfirm type="warning"
@@ -67,6 +67,10 @@ export default {
         close: Boolean,
         edit: Boolean,
         notes: String,
+        tip: {
+            type: String,
+            default: "Running..."
+        },
         loading: {
             type: Boolean,
             default: false,

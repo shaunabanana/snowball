@@ -15,6 +15,7 @@
             { id: 'citations', type: 'selection', text: 'Selection: All citations'},
             { id: 'references', type: 'selection', text: 'Selection: All references'}
         ]"
+        :tip="status"
         :notes="data.notes"
     >
         <a-space direction="vertical">
@@ -72,7 +73,10 @@ export default {
 
     data: () => ({
         inputCount: 0,
-        outputCount: 0
+        outputCount: 0,
+        step: null,
+        progress: 0,
+        progressTarget: 1,
     }),
 
     mounted() {
@@ -172,7 +176,12 @@ export default {
                 dois, 
                 this.data.getCitations, 
                 this.data.getReferences, 
-                this.data.includeArxiv
+                this.data.includeArxiv,
+                ({step, progress, target}) => {
+                    this.step = step;
+                    this.progress = progress;
+                    this.progressTarget = target;
+                }
             ).then((results) => {
                 console.log(results);
                 nodeData.papers = results.papers;
@@ -182,25 +191,17 @@ export default {
 
                 nodeData.loading = false;
                 this.handleInput();
-            }).catch(() => {
+            }).catch((e) => {
+                console.error(e);
                 nodeData.loading = false;
             });
         },
     },
 
     computed: {
-        snowballPapers() {
-            if (
-                !this.data.input
-                    || !Array.isArray(this.data.input)
-                    || this.data.input.length === 0
-            ) return [];
-
-            const input = this.data.input[0].concat(...this.data.input.slice(1));
-            return input.filter(
-                (paper) => paper.decision === 'include' && paper.doi,
-            );
-        },
+        status() {
+            return this.step ? `${this.step} (${this.progress}/${this.progressTarget})`: "Running..."
+        }
     },
 
     watch: {

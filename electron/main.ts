@@ -38,6 +38,7 @@ function createWindow() {
     height: 800,
     title: 'Snowball',
     webPreferences: {
+      webSecurity: false,
       nodeIntegration: true,
       contextIsolation: false,
     },
