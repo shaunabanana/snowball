@@ -25,3 +25,7 @@ pnpm-debug.log*
 #Electron-builder output
 dist-electron
 release
+
+# Private
+.env
+notarization-error.log
