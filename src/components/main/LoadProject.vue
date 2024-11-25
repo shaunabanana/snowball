@@ -105,6 +105,11 @@ export default {
                     this.setWindowTitle(projectPath);
                     Object.keys(projectData).forEach((key) => {
                         console.log(key, projectData[key]);
+                        if (key === "workflow") {
+                            for (let element of projectData[key]) {
+                                if (element.loading) element.loading = false;
+                            }
+                        }
                         this.store[key] = projectData[key];
                     });
                     this.store.projectPath = projectPath;
