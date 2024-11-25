@@ -5,8 +5,10 @@
   "author": "Shengchen Zhang <shengchenzhang1207@gmail.com> (https://shengchen.design)",
   "license": "MIT",
   "type": "module",
+  "description": "Find and filter literature, fast.",
   "scripts": {
     "dev": "vite",
+    "build-notsc": "vite build && electron-builder",
     "build": "vue-tsc && vite build && electron-builder",
     "preview": "vite preview"
   },
@@ -34,13 +36,17 @@
     "electron-store": "^10.0.0",
     "flat-palettes": "^0.1.0",
     "friendly-time": "^1.1.1",
+    "just-clone": "^6.2.0",
+    "just-omit": "^2.2.0",
     "ky": "^1.7.2",
     "nanoid": "^5.0.7",
     "nanoid-dictionary": "^4.3.0",
     "p-throttle": "^6.2.0",
     "pinia": "^2.2.4",
+    "pluggable-electron": "^1.0.0",
     "sanitize-basename": "^2.0.1",
     "sequmise": "^1.0.10",
+    "string-similarity": "^4.0.4",
     "toposort": "^2.0.2",
     "vue": "^3.4.21",
     "vue-boring-avatars": "^1.4.0",
@@ -50,14 +56,15 @@
     "@arco-design/web-vue": "^2.56.2",
     "@vitejs/plugin-vue": "^5.0.4",
     "electron": "^30.0.1",
-    "electron-builder": "^24.13.3",
+    "electron-builder": "^25.1.8",
+    "electron-builder-notarize": "^1.5.2",
     "mark.js": "^8.11.1",
     "sass-embedded": "^1.80.3",
     "typescript": "^5.2.2",
     "vite": "^5.1.6",
-    "vite-plugin-electron": "^0.28.6",
+    "vite-plugin-electron": "^0.29.0",
     "vite-plugin-electron-renderer": "^0.14.5",
-    "vue-tsc": "^2.0.26"
+    "vue-tsc": "^2.1.10"
   },
   "main": "dist-electron/main.js"
 }
