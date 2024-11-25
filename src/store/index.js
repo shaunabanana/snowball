@@ -189,6 +189,10 @@ export default defineStore('snowball', {
         },
     },
     actions: {
+        save() {
+            writeProject(this);
+        },
+
         updateTags() {
             updateTagIds(this);
             // updateAutoTags(this, this.papers);

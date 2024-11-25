@@ -44,23 +44,23 @@ function writeWorkflowData(store) {
             encoding: 'utf8',
         });
 
-        const nodeDataPath = join(dataPath, element.id);
-        if (existsSync(nodeDataPath)) {
-            rmdirSync(nodeDataPath, { recursive: true });
-        }
-        mkdirSync(nodeDataPath);
+        // const nodeDataPath = join(dataPath, element.id);
+        // if (existsSync(nodeDataPath)) {
+        //     rmdirSync(nodeDataPath, { recursive: true });
+        // }
+        // mkdirSync(nodeDataPath);
 
-        writeFileSync(
-            join(nodeDataPath, 'input.yaml'),
-            stringify(store.dataflow.input[element.id] || {}),
-            { encoding: 'utf8' },
-        );
+        // writeFileSync(
+        //     join(nodeDataPath, 'input.yaml'),
+        //     stringify(store.dataflow.input[element.id] || {}),
+        //     { encoding: 'utf8' },
+        // );
 
-        writeFileSync(
-            join(nodeDataPath, 'output.yaml'),
-            stringify(store.dataflow.output[element.id] || {}),
-            { encoding: 'utf8' },
-        );
+        // writeFileSync(
+        //     join(nodeDataPath, 'output.yaml'),
+        //     stringify(store.dataflow.output[element.id] || {}),
+        //     { encoding: 'utf8' },
+        // );
     });
 }
 
@@ -142,7 +142,9 @@ ipcMain.handle('create-project', (event, projectPath) => {
 });
 
 ipcMain.handle('write-project', (event, data) => {
-    writeProject(JSON.parse(data));
+    // writeProject(JSON.parse(data));
+    writeProject(data);
+
 });
 
 ipcMain.handle('read-project', (event, projectPath) => readProject(projectPath));

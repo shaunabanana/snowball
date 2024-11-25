@@ -34,6 +34,7 @@
                         style="min-width: 20rem;"
                         :model-value="notes"
                         @input="store.workflowNode(id).data.notes = $event"
+                        @blur="store.save"
                         @keydown.stop
                         @keyup.stop
                         @mousedown.stop
