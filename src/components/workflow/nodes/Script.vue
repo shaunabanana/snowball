@@ -3,40 +3,21 @@
         :id="id"
         :loading="data.loading"
         :notes="data.notes"
-        :inputs="[
-            { id: 'papers', text: 'Papers', type: 'papers', class: 'data' },
-            { id: 'selection', text: 'Selection: Only process specific papers', type: 'selection' },
-        ]"
+        :inputs="data.inputs"
+        :outputs="data.outputs"
     >
         <a-space direction="vertical">
             <a-descriptions size="small" :column="1">
-                <a-descriptions-item label="Format">
-                    <a-select size="small"
-                        default-value="ris"
-                        :model-value="data.format"
-                        @change="updateFormat"
-                    >
-                        <a-option value="ris">RIS</a-option>
-                        <a-option value="bib">BibTeX</a-option>
-                        <a-option value="csv">CSV</a-option>
-                    </a-select>
-                </a-descriptions-item>
                 <a-descriptions-item label="Location">
-                    {{data.path ? data.path : 'Not set.'}}
+                    {{ fileName }}
                 </a-descriptions-item>
             </a-descriptions>
 
             <a-space>
                 <a-button size="small" :type="data.path ? 'secondary' : 'primary'"
-                    @click="setSaveLocation"
+                    @click="setScriptLocation"
                 >
                     Load script
-                </a-button>
-                <a-button size="small" :type="data.path ? 'primary' : 'secondary'"
-                    :disabled="!data.path"
-                    @click="handleInput"
-                >
-                    Edit script
                 </a-button>
                 <a-button size="small" :type="data.path ? 'primary' : 'secondary'"
                     :disabled="!data.path"
@@ -52,7 +33,7 @@
 <script>
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { ipcRenderer } from 'electron';
-import { writeFile } from 'fs/promises';
+import { readFile } from 'fs/promises';
 import { relative, dirname, join } from 'path';
 
 import useSnowballStore from '@/store';
@@ -76,13 +57,30 @@ export default {
     mounted() {
         const nodeData = this.store.workflowNode(this.id).data;
         nodeData.run = this.handleInput.bind(this);
-        if (!this.data.format) {
-            nodeData.format = 'ris';
+        this.worker = new Worker(new URL('./workers/script.js', import.meta.url));
+
+        if (!this.data.path) {
+            nodeData.path = null;
         }
-        this.worker = new Worker(new URL('./workers/export.js', import.meta.url), {
-            type: 'module',
-        });
-        this.handleInput();
+        if (!this.data.inputs) {
+            nodeData.inputs = [];
+        }
+        if (!this.data.outputs) {
+            nodeData.outputs = [];
+        }
+        this.handleInput(true);
+    },
+
+    computed: {
+        fileName() {
+            const nodeData = this.store.workflowNode(this.id).data;
+            if (nodeData.path) {
+                return nodeData.path.length > 30
+                    ? `${nodeData.path.slice(0, 15)}...${nodeData.path.slice(-15)}`
+                    : nodeData.path;
+            }
+            return "Not set."
+        }
     },
 
     methods: {
@@ -92,26 +90,39 @@ export default {
             writeProject(this.store);
         },
 
-        setSaveLocation() {
-            ipcRenderer.invoke('export', this.data.format).then((filePath) => {
+        setScriptLocation() {
+            ipcRenderer.invoke('import', "js").then((filePath) => {
                 if (!filePath) return;
-                console.log(`[ExportSheet][setSaveLocation] Set location to ${filePath}`);
+                console.log(`[ScriptNode][setScriptLocation] Set location to ${filePath}`);
                 const nodeData = this.store.workflowNode(this.id).data;
-                const fileName = filePath.replace(new RegExp(`.${this.data.format}$`), '');
-                const project = dirname(this.store.projectPath);
-                const location = relative(project, fileName);
-                nodeData.path = location;
+                nodeData.path = path;
                 writeProject(this.store);
                 this.handleInput();
             });
         },
 
-        handleInput() {
+        parseScript(path) {
+            return new Promise((resolve, reject) => {
+                const nodeData = this.store.workflowNode(this.id).data;
+                readFile(path, { encoding: 'utf-8' }).then((content) => {
+                    const moduleBlob = new Blob([content], { type: "text/javascript" })
+                    const moduleUrl = window.URL.createObjectURL(moduleBlob);
+                    import(moduleUrl).then((script) => {
+                        nodeData.inputs = script.inputs;
+                        nodeData.outputs = script.outputs;
+                        const codeBlob = new Blob([script.run.toString()], { type: "text/javascript" })
+                        const codeUrl = window.URL.createObjectURL(codeBlob);
+                        resolve(codeUrl);
+                    });
+                })
+            })
+        },
+
+        handleInput(skipAutoRun) {
             const nodeData = this.store.workflowNode(this.id).data;
             const workflowInput = this.store.dataflow.input[this.id];
             if (
                 !workflowInput
-                || !workflowInput.papers
                 || !this.data.path
             ) {
                 this.papers = [];
@@ -120,54 +131,27 @@ export default {
 
             nodeData.loading = true;
 
-            console.log(workflowInput);
+            this.parseScript(nodeData.path).then((codeUrl) => {
 
-            let selectedPapers = workflowInput.papers;
-            // If selection is specified, then filter input data using
-            if (workflowInput.selection && workflowInput.selection.length > 0) {
-                selectedPapers = selectedPapers.filter(
-                    (paper) => workflowInput.selection.includes(paper.id),
-                );
-            }
+                this.worker.onmessage = ({ data }) => {
+                    console.log("Received from worker", data)
+                    this.store.dataflow.output[this.id] = data;
+                    nodeData.loading = false;
+                    if (!skipAutoRun) this.store.runWorkflow(this.id);
+                };
+                this.worker.onerror = (error) => {
+                    console.log('Error running script.', error);
+                    this.$message.error(error.message);
+                    nodeData.loading = false;
+                };
 
-            console.log(selectedPapers);
-
-            console.log(`[PapersScreen][exportSheet] Exporting ${selectedPapers.length} papers in ${this.data.format} format.`);
-            let fileContent;
-            if (this.data.format === 'ris') {
-                fileContent = exportRIS(selectedPapers);
-            } else if (this.data.format === 'bib') {
-                fileContent = exportBibTeX(selectedPapers);
-            } else if (this.data.format === 'csv') {
-                fileContent = exportCSV(selectedPapers);
-            }
-            if (!fileContent) console.log(`[PapersScreen][exportSheet] Called with invalid format ${this.data.format}!`);
-
-            const savePath = join(
-                dirname(this.store.projectPath),
-                `${this.data.path}.${this.data.format}`,
-            );
-            writeFile(savePath, fileContent, {
-                encoding: 'utf8',
-            }).then(() => {
-                this.$message.success(`Successfully exported to ${savePath}.`);
-            }).catch((error) => {
-                this.$message.error(`Failed to write file ${savePath}! ${error.message}`);
-                console.log(`[PapersScreen][exportSheet] Failed to write file ${savePath}! ${error.message}`);
-            });
-
-            nodeData.loading = false;
+                this.worker.postMessage(JSON.stringify({
+                    data: workflowInput,
+                    code: codeUrl
+                }));
+            })
         },
-    },
-
-    watch: {
-        'data.input': {
-            deep: false,
-            handler() {
-                this.doExport();
-            },
-        },
-    },
+    }
 };
 </script>
 

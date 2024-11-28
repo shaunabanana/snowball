@@ -68,12 +68,10 @@
                     Boolean
                 </a-button>
 
-                <a-tooltip content="Functionality coming soon!" position="bottom">
-                    <a-button @click="$emit('create', 'script')" disabled>
-                        <template #icon><icon-code /></template>
-                        Script
-                    </a-button>
-                </a-tooltip>
+                <a-button @click="$emit('create', 'script')">
+                    <template #icon><icon-code /></template>
+                    Script
+                </a-button>
             </a-button-group>
         </a-space>
 
