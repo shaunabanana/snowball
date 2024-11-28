@@ -5,6 +5,7 @@ function calculateDistance(paper1, paper2) {
     let similarity = 1;
     if (paper1.id && paper1.id === paper2.id) return 0;
     if (paper1.doi && paper1.doi === paper2.doi) return 0;
+    if (typeof paper1.title !== "string" || typeof paper2.title !== "string") return 1;
 
     const titleSimilarity = stringSimilarity.compareTwoStrings(
         paper1.title.toLowerCase(),
