@@ -75,7 +75,7 @@ export default {
         this.worker = new Worker(new URL('./workers/boolean.js', import.meta.url), {
             type: 'module',
         });
-        this.handleInput();
+        this.handleInput(true);
     },
 
     methods: {
@@ -91,7 +91,7 @@ export default {
             this.handleInput();
         },
 
-        handleInput() {
+        handleInput(skipAutoRun) {
             console.log(this.data);
             if (
                 !this.store.dataflow.input[this.id]
@@ -123,7 +123,7 @@ export default {
                 console.log(`[Boolean@${this.id}][handleInput] Done.`);
                 nodeData.loading = false;
 
-                this.store.runWorkflow(this.id);
+                if (!skipAutoRun) this.store.runWorkflow(this.id);
                 writeProject(this.store);
             };
             this.worker.onerror = (error) => {

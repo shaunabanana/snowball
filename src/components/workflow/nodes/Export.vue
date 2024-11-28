@@ -76,7 +76,7 @@ export default {
         this.worker = new Worker(new URL('./workers/export.js', import.meta.url), {
             type: 'module',
         });
-        this.handleInput();
+        this.handleInput(true);
     },
 
     methods: {

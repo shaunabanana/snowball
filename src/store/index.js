@@ -3,6 +3,7 @@ import toposort from 'toposort';
 import { filter } from '@/utils/search';
 // import { processTags, updateAutoTags, updateTagIds } from '@/utils/tags';
 import { processTags, updateTagIds } from '@/utils/tags';
+import debounce from '@/utils/debounce';
 import writeProject from '@/utils/persistence';
 
 export default defineStore('snowball', {
@@ -221,12 +222,12 @@ export default defineStore('snowball', {
         },
 
         runWorkflow(elementId) {
-            this.workflow.forEach((el) => {
-                if (this.inEdges(el.id).length === 0 && this.dataflow.input[el.id]) {
-                    delete this.dataflow.input[el.id];
-                    if (el.data.run) el.data.run();
-                }
-            });
+            // this.workflow.forEach((el) => {
+            //     if (this.inEdges(el.id).length === 0 && this.dataflow.input[el.id]) {
+            //         delete this.dataflow.input[el.id];
+            //         if (el.data.run) el.data.run();
+            //     }
+            // });
 
             if (!elementId) {
                 console.log('No elementId specified. Running the entire workflow.');
@@ -238,7 +239,7 @@ export default defineStore('snowball', {
                 sorted.forEach((nodeId) => {
                     const node = this.workflowNode(nodeId);
                     console.log(node, node.data.run);
-                    if (node.data.run) node.data.run();
+                    if (node.data.run) node.data.run(true);
                 });
                 return;
             }

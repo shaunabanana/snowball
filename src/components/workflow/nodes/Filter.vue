@@ -110,7 +110,7 @@ export default {
         this.worker = new Worker(new URL('./workers/filter.js', import.meta.url), {
             type: 'module',
         });
-        this.handleInput();
+        this.handleInput(true);
     },
 
     methods: {
@@ -118,7 +118,7 @@ export default {
             this.store.workflowNode(this.id).data[key] = value;
         },
 
-        handleInput() {
+        handleInput(skipAutoRun) {
             if (
                 !this.store.dataflow.input[this.id] || !this.store.dataflow.input[this.id].papers
             ) {
@@ -152,7 +152,7 @@ export default {
                 nodeData.loading = false;
                 this.error = false;
 
-                this.store.runWorkflow(this.id);
+                if (!skipAutoRun) this.store.runWorkflow(this.id);
                 writeProject(this.store);
             };
             this.worker.onerror = (error) => {

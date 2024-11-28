@@ -100,7 +100,7 @@ export default {
         });
 
         this.store.activeSheet = this.id;
-        this.handleInput();
+        this.handleInput(true);
     },
 
     methods: {
@@ -109,7 +109,7 @@ export default {
             this.store.workflowNode(this.id).data.name = value;
         },
 
-        handleInput() {
+        handleInput(skipAutoRun) {
             const workflowInput = this.store.dataflow.input[this.id];
             const nodeData = this.store.workflowNode(this.id).data;
             if (
@@ -135,7 +135,7 @@ export default {
                 nodeData.loading = false;
                 console.log(`[Sheet@${this.id}][handleInput] Sheet has ${this.papers.length} papers. Applied ${Object.keys(this.data.edits).length} edits.`);
 
-                this.store.runWorkflow(this.id);
+                if (!skipAutoRun) this.store.runWorkflow(this.id);
                 writeProject(this.store);
             };
             this.worker.onerror = (error) => {

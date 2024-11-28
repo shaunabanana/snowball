@@ -107,7 +107,7 @@ export default {
         this.worker = new Worker(new URL('./workers/snowball.js', import.meta.url), {
             type: 'module',
         });
-        this.handleInput();
+        this.handleInput(true);
     },
 
     methods: {
@@ -117,7 +117,7 @@ export default {
             writeProject(this.store);
         },
 
-        handleInput() {
+        handleInput(skipAutoRun) {
             const workflowInput = this.store.dataflow.input[this.id];
             let selectedPapers = [];
             if (!workflowInput || !workflowInput.papers) {
@@ -142,11 +142,11 @@ export default {
                 citations: this.data.citations || [],
                 references: this.data.references || [],
             };
-            this.store.runWorkflow(this.id)
+            if (!skipAutoRun) this.store.runWorkflow(this.id)
             writeProject(this.store);
         },
 
-        doSnowball() {
+        doSnowball(skipAutoRun) {
             const nodeData = this.store.workflowNode(this.id).data;
             const workflowInput = this.store.dataflow.input[this.id];
             if (
@@ -155,7 +155,7 @@ export default {
             ) {
                 this.papers = [];
                 this.store.dataflow.output[this.id] = {};
-                this.store.runWorkflow(this.id);
+                if (!skipAutoRun) this.store.runWorkflow(this.id);
                 return;
             }
 

@@ -80,7 +80,7 @@ const fileLocation = computed(() => {
 
 
 // Methods
-const loadFile = function(filePath) {
+const loadFile = function(filePath, skipAutoRun) {
 	const nodeData = store.workflowNode(props.id).data;
 	nodeData.loading = true;
 	readFile(filePath, 'utf-8').then((content) => {
@@ -102,7 +102,7 @@ const loadFile = function(filePath) {
 			// Stop loading animation
 			nodeData.loading = false;
 			// Trigger workflow
-			store.runWorkflow(props.id);
+			if (!skipAutoRun) store.runWorkflow(props.id);
 			writeProject(store);
 		};
 		worker.value.onerror = (error) => {
@@ -123,13 +123,13 @@ const openFile = function() {
 	});
 }
 
-const reload = function() {
+const reload = function(skipAutoRun) {
 	if (!props.data.path) {
 		store.dataflow.output[props.id] = {};
-		store.runWorkflow(props.id);
+		if (!skipAutoRun) store.runWorkflow(props.id);
 		return;
 	}
-	loadFile(join(dirname(store.projectPath), props.data.path));
+	loadFile(join(dirname(store.projectPath), props.data.path), skipAutoRun);
 }
 
 

@@ -114,7 +114,7 @@ export default {
     created() {
         this.updateThreshold = debounce((value) => {
             this.store.workflowNode(this.id).data.threshold = value;
-            this.handleInput();
+            this.handleInput(true);
         }, 300);
     },
 
@@ -135,7 +135,7 @@ export default {
     },
 
     methods: {
-        handleInput() {
+        handleInput(skipAutoRun) {
             const nodeData = this.store.workflowNode(this.id).data;
             const workflowInput = this.store.dataflow.input[this.id];
             console.log(workflowInput);
@@ -144,7 +144,7 @@ export default {
                 this.total = 0;
                 this.mergedCount = 0;
                 this.store.dataflow.output[this.id] = {};
-                this.store.runWorkflow(this.id);
+                if (!skipAutoRun) this.store.runWorkflow(this.id);
                 return;
             }
 
@@ -176,7 +176,7 @@ export default {
 
                 nodeData.loading = false;
 
-                this.store.runWorkflow(this.id);
+                if (!skipAutoRun) this.store.runWorkflow(this.id);
                 writeProject(this.store);
             };
         },
