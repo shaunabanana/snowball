@@ -51,12 +51,10 @@
                     <template #icon><icon-play-arrow /></template>
                     Snowball
                 </a-button>
-                <a-tooltip content="Functionality coming soon!" position="bottom">
-                    <a-button @click="$emit('create', 'graph')" disabled>
-                        <template #icon><icon-relation /></template>
-                        Graph
-                    </a-button>
-                </a-tooltip>
+                <a-button @click="$emit('create', 'graph')">
+                    <template #icon><icon-relation /></template>
+                    Graph
+                </a-button>
             </a-button-group>
         </a-space>
 

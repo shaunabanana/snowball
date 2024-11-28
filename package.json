@@ -33,6 +33,7 @@
     "bibliothecary": "^1.1.0",
     "compare-versions": "^6.1.1",
     "csv-stringify": "^6.5.1",
+    "d3": "^7.9.0",
     "electron-store": "^10.0.0",
     "flat-palettes": "^0.1.0",
     "friendly-time": "^1.1.1",

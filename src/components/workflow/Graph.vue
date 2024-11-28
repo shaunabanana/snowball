@@ -37,6 +37,7 @@ import FilterNode from './nodes/Filter.vue';
 import TagNode from './nodes/Tag.vue';
 import ScriptNode from './nodes/Script.vue';
 import BooleanNode from './nodes/Boolean.vue';
+import GraphNode from './nodes/Graph.vue';
 
 // $emit('update:modelValue', $event)
 
@@ -46,12 +47,7 @@ export default {
         VueFlow,
         Background,
         // Controls,
-        MiniMap,
-        // ImportPapersNode,
-        // SheetNode,
-        // ExportSheetNode,
-        // SnowballNode,
-        // MergeNode,
+        MiniMap
     },
     props: {
         editable: {
@@ -79,6 +75,7 @@ export default {
                 tag: markRaw(TagNode),
                 script: markRaw(ScriptNode),
                 boolean: markRaw(BooleanNode),
+                graph: markRaw(GraphNode)
             },
         };
     },
