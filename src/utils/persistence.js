@@ -1,5 +1,4 @@
 import AsyncLock from 'async-lock';
-import bfj from 'bfj';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { ipcRenderer } from 'electron';
 import omit from 'just-omit';
