@@ -10,6 +10,7 @@
             },
         ]"
         :outputs="[
+            { id: 'seeds', type: 'papers', text: 'Seed papers', class: 'data' },
             { id: 'papers', type: 'papers', text: 'New papers', class: 'data' },
             { id: 'graph', type: 'graph', text: 'Graph: Relations among the snowballed papers', class: 'graph' },
             { id: 'citations', type: 'selection', text: 'Selection: All citations'},
@@ -118,10 +119,11 @@ export default {
 
         handleInput() {
             const workflowInput = this.store.dataflow.input[this.id];
+            let selectedPapers = [];
             if (!workflowInput || !workflowInput.papers) {
                 this.inputCount = 0;
             } else {
-                let selectedPapers = workflowInput.papers;
+                selectedPapers = workflowInput.papers;
                 // If selection is specified, then filter input data using
                 if (Array.isArray(workflowInput.selection)) {
                     selectedPapers = selectedPapers.filter(
@@ -134,6 +136,7 @@ export default {
             this.outputCount = this.data.papers ? this.data.papers.length : 0;
 
             this.store.dataflow.output[this.id] = {
+                seeds: selectedPapers,
                 papers: this.data.papers || [],
                 graph: this.data.graph || [],
                 citations: this.data.citations || [],
@@ -184,6 +187,7 @@ export default {
                 }
             ).then((results) => {
                 console.log(results);
+                nodeData.seeds = selectedPapers;
                 nodeData.papers = results.papers;
                 nodeData.graph = results.graph;
                 nodeData.citations = results.citations;
