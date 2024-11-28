@@ -1,7 +1,5 @@
 <script setup>
 import { ref, computed } from "vue";
-import classNames from "classnames";
-// import { DownloadSVG } from "core/ui/DownloadSVG";
 
 const X_OFFSET = 100;
 const Y_OFFSET = 50;
